@@ -2,6 +2,7 @@ import {
   NeoObject,
   NeoResponse,
   NeoStatus,
+  NeoErrorCode,
   getNeoStatus,
   getNeoStatusColor,
   getNeoStatusLabel,
@@ -24,8 +25,8 @@ interface NeoThreatConsoleProps {
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      fontSize: '11px',
-      letterSpacing: '0.13em',
+      fontSize: '13px',
+      letterSpacing: '0.1em',
       textTransform: 'uppercase',
       color: 'var(--hud-green-mid)',
       borderBottom: '1px solid rgba(255,255,255,0.07)',
@@ -49,9 +50,9 @@ function WindowTab({ label, active, onClick }: { label: string; active: boolean;
         borderBottom: `2px solid ${active ? '#FFC857' : 'transparent'}`,
         color: active ? '#FFC857' : 'var(--hud-green-faint)',
         fontFamily: "'Courier New', monospace",
-        fontSize: '13px',
-        letterSpacing: '0.08em',
-        padding: '4px 0',
+        fontSize: '15px',
+        letterSpacing: '0.07em',
+        padding: '5px 0',
         cursor: 'pointer',
         textTransform: 'uppercase' as const,
       }}
@@ -73,9 +74,9 @@ function StatusCount({ status, count }: { status: NeoStatus; count: number }) {
     <div style={{
       display: 'flex',
       justifyContent: 'space-between',
-      fontSize: '11px',
-      letterSpacing: '0.07em',
-      lineHeight: 1.9,
+      fontSize: '13px',
+      letterSpacing: '0.06em',
+      lineHeight: 1.85,
       color: count > 0 ? color : 'var(--hud-green-faint)',
     }}>
       <span>{marker} {label}</span>
@@ -119,8 +120,8 @@ function NeoItem({ neo, isSelected, onClick }: {
         justifyContent: 'space-between',
         alignItems: 'baseline',
         fontFamily: "'Courier New', monospace",
-        fontSize: '13px',
-        letterSpacing: '0.05em',
+        fontSize: '15px',
+        letterSpacing: '0.04em',
         color: isSelected ? '#00FF88' : 'var(--hud-green-mid)',
         lineHeight: 1.5,
         textTransform: 'uppercase',
@@ -128,7 +129,7 @@ function NeoItem({ neo, isSelected, onClick }: {
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: '4px' }}>
           {neo.name.length > 15 ? neo.name.slice(0, 15) + '…' : neo.name}
         </span>
-        <span style={{ flexShrink: 0, fontSize: '10px', color: isSelected ? '#00FF88' : color }}>
+        <span style={{ flexShrink: 0, fontSize: '12px', color: isSelected ? '#00FF88' : color }}>
           {dateLbl}
         </span>
       </div>
@@ -137,9 +138,9 @@ function NeoItem({ neo, isSelected, onClick }: {
         display: 'flex',
         justifyContent: 'space-between',
         fontFamily: "'Courier New', monospace",
-        fontSize: '11px',
+        fontSize: '13px',
         color: 'var(--hud-green-dim)',
-        letterSpacing: '0.04em',
+        letterSpacing: '0.03em',
         lineHeight: 1.5,
       }}>
         <span>{neo.velocityKmS.toFixed(1)} km/s</span>
@@ -148,6 +149,46 @@ function NeoItem({ neo, isSelected, onClick }: {
         </span>
       </div>
     </button>
+  );
+}
+
+// ── Error card ────────────────────────────────────────────────────────────────
+function ErrorCard({ errorCode, hasApiKey }: { errorCode?: NeoErrorCode; hasApiKey?: boolean }) {
+  const lines: { text: string; color: string }[] = [];
+
+  switch (errorCode) {
+    case 'RATE_LIMITED':
+      lines.push({ text: '⚠ RATE LIMITED', color: 'var(--hud-warning)' });
+      lines.push({
+        text: hasApiKey ? 'QUOTA EXCEEDED — WAIT ~1HR' : 'DEMO_KEY: 10 REQ/HR LIMIT',
+        color: 'var(--hud-green-dim)',
+      });
+      if (!hasApiKey) lines.push({ text: 'ADD NASA_API_KEY IN ECOSYSTEM.CONFIG.JS', color: 'var(--hud-green-faint)' });
+      break;
+    case 'UNAUTHORIZED':
+      lines.push({ text: '✗ UNAUTHORIZED', color: 'var(--hud-danger)' });
+      lines.push({ text: 'CHECK NASA_API_KEY IN ECOSYSTEM.CONFIG.JS', color: 'var(--hud-green-dim)' });
+      break;
+    case 'NETWORK_ERROR':
+      lines.push({ text: '✗ NETWORK FAILURE', color: 'var(--hud-danger)' });
+      lines.push({ text: 'CHECK CONNECTIVITY TO NASA SERVER', color: 'var(--hud-green-dim)' });
+      break;
+    case 'API_ERROR':
+      lines.push({ text: '⚠ NASA API ERROR', color: 'var(--hud-warning)' });
+      lines.push({ text: 'SEE SERVER LOG FOR DETAILS', color: 'var(--hud-green-dim)' });
+      break;
+    default:
+      lines.push({ text: '⚠ NASA UNAVAILABLE', color: 'var(--hud-warning)' });
+  }
+
+  return (
+    <div style={{ marginBottom: '8px' }}>
+      {lines.map((l, i) => (
+        <div key={i} style={{ fontSize: '13px', letterSpacing: '0.07em', lineHeight: 1.7, color: l.color }}>
+          {l.text}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -192,14 +233,15 @@ export default function NeoThreatConsole({
 
         {/* Loading / error */}
         {neoStatus === 'loading' && (
-          <div style={{ fontSize: '12px', color: 'var(--hud-green-dim)', letterSpacing: '0.08em', marginBottom: '8px' }}>
+          <div style={{ fontSize: '14px', color: 'var(--hud-green-dim)', letterSpacing: '0.07em', marginBottom: '8px' }}>
             QUERYING NASA NEOWS<span className="blink">_</span>
           </div>
         )}
-        {neoStatus === 'error' && (
-          <div style={{ fontSize: '12px', color: 'var(--hud-warning)', letterSpacing: '0.08em', marginBottom: '8px' }}>
-            ⚠ NASA API UNAVAILABLE
-          </div>
+        {neoStatus === 'error' && neoData && (
+          <ErrorCard errorCode={neoData.errorCode} hasApiKey={neoData.hasApiKey} />
+        )}
+        {neoStatus === 'error' && !neoData && (
+          <ErrorCard errorCode="NETWORK_ERROR" hasApiKey={false} />
         )}
 
         {/* Threat assessment */}
@@ -234,7 +276,7 @@ export default function NeoThreatConsole({
               ))}
             </div>
             {isTruncated && (
-              <div style={{ fontSize: '10px', color: 'var(--hud-green-faint)', letterSpacing: '0.08em', padding: '4px 7px', fontFamily: "'Courier New', monospace" }}>
+              <div style={{ fontSize: '12px', color: 'var(--hud-green-faint)', letterSpacing: '0.07em', padding: '4px 7px', fontFamily: "'Courier New', monospace" }}>
                 {objects.length - DISPLAY_LIMIT} MORE — USE 30D FOR FULL VIEW
               </div>
             )}
@@ -243,7 +285,7 @@ export default function NeoThreatConsole({
 
         {/* Empty state */}
         {neoStatus !== 'loading' && objects.length === 0 && (
-          <div style={{ fontSize: '12px', color: 'var(--hud-green-faint)', letterSpacing: '0.08em', lineHeight: 2 }}>
+          <div style={{ fontSize: '14px', color: 'var(--hud-green-faint)', letterSpacing: '0.07em', lineHeight: 2 }}>
             <div>NO CONTACTS IN</div>
             <div>SELECTED WINDOW</div>
           </div>
@@ -253,7 +295,7 @@ export default function NeoThreatConsole({
         {neoData && (
           <>
             <div style={{ height: '1px', background: 'var(--hud-border)', margin: '9px 0' }} />
-            <div style={{ fontSize: '9px', color: 'var(--hud-green-faint)', letterSpacing: '0.08em', lineHeight: 1.9 }}>
+            <div style={{ fontSize: '11px', color: 'var(--hud-green-faint)', letterSpacing: '0.07em', lineHeight: 1.9 }}>
               <div>SRC: {neoData.source}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>{neoData.fromCache ? `CACHE: ${ageLabel} AGO` : 'LIVE'}</span>
@@ -265,9 +307,9 @@ export default function NeoThreatConsole({
                     border: '1px solid var(--hud-border)',
                     color: neoStatus === 'loading' ? 'var(--hud-green-faint)' : 'var(--hud-green-dim)',
                     fontFamily: "'Courier New', monospace",
-                    fontSize: '9px',
-                    letterSpacing: '0.1em',
-                    padding: '1px 5px',
+                    fontSize: '11px',
+                    letterSpacing: '0.08em',
+                    padding: '2px 6px',
                     cursor: neoStatus === 'loading' ? 'not-allowed' : 'pointer',
                     textTransform: 'uppercase' as const,
                   }}

@@ -14,6 +14,13 @@ export interface NeoObject {
   nasaJplUrl: string;
 }
 
+export type NeoErrorCode =
+  | 'RATE_LIMITED'    // HTTP 429 — API quota exhausted
+  | 'UNAUTHORIZED'    // HTTP 403 — bad or missing key
+  | 'API_ERROR'       // other non-2xx from NASA
+  | 'NETWORK_ERROR'   // timeout / connection failure
+  | 'NO_DATA';        // 200 but zero objects returned
+
 export interface NeoResponse {
   objects: NeoObject[];
   windowDays: number;
@@ -25,6 +32,8 @@ export interface NeoResponse {
   fromCache: boolean;
   cacheAgeSeconds: number;
   error?: string;
+  errorCode?: NeoErrorCode;
+  hasApiKey?: boolean;   // whether a real key (not DEMO_KEY) is configured
 }
 
 // ── Tactical status classification ────────────────────────────────────────────

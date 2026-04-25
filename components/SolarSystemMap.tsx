@@ -196,9 +196,9 @@ export default function SolarSystemMap({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "4px 10px",
-          fontSize: "10px",
-          letterSpacing: "0.1em",
+          padding: "5px 10px",
+          fontSize: "12px",
+          letterSpacing: "0.08em",
           color: "var(--hud-green-dim)",
           borderBottom: "1px solid var(--hud-border)",
           background: "var(--hud-panel-bg)",
@@ -218,9 +218,9 @@ export default function SolarSystemMap({
         <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
           <button onClick={zoomOut} style={mapCtrlBtn()} title="Zoom out (-)">−</button>
           <span style={{
-            fontSize: '10px', letterSpacing: '0.08em',
+            fontSize: '12px', letterSpacing: '0.07em',
             color: 'var(--hud-green-mid)',
-            minWidth: '40px', textAlign: 'center',
+            minWidth: '44px', textAlign: 'center',
             fontFamily: "'Courier New', monospace",
           }}>
             {(zoom * 100).toFixed(0)}%
@@ -398,9 +398,9 @@ export default function SolarSystemMap({
           flexShrink: 0,
           display: "flex",
           justifyContent: "space-between",
-          padding: "4px 10px",
-          fontSize: "10px",
-          letterSpacing: "0.1em",
+          padding: "5px 10px",
+          fontSize: "12px",
+          letterSpacing: "0.08em",
           color: "var(--hud-green-dim)",
           borderTop: "1px solid var(--hud-border)",
           background: "var(--hud-panel-bg)",
@@ -432,9 +432,9 @@ function hudBtn(disabled = false): React.CSSProperties {
     border: '1px solid var(--hud-border)',
     color: disabled ? 'var(--hud-green-faint)' : 'var(--hud-green-dim)',
     fontFamily: "'Courier New', monospace",
-    fontSize: '11px',
-    letterSpacing: '0.1em',
-    padding: '2px 8px',
+    fontSize: '13px',
+    letterSpacing: '0.08em',
+    padding: '3px 9px',
     cursor: disabled ? 'not-allowed' : 'pointer',
     textTransform: 'uppercase' as const,
   };

@@ -1,4 +1,11 @@
-import { NeoObject } from './types';
+import { NeoObject, NeoErrorCode } from './types';
+
+export class NeoApiError extends Error {
+  constructor(public code: NeoErrorCode, message: string) {
+    super(message);
+    this.name = 'NeoApiError';
+  }
+}
 
 const NEO_API = 'https://api.nasa.gov/neo/rest/v1/feed';
 const TIMEOUT_MS = 14000;
@@ -48,7 +55,13 @@ async function fetchBatch(startDate: Date, endDate: Date): Promise<NeoObject[]> 
       signal: controller.signal,
     });
 
-    if (!res.ok) throw new Error(`NASA NeoWS HTTP ${res.status}`);
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      const code: NeoErrorCode =
+        res.status === 429 ? 'RATE_LIMITED' :
+        res.status === 403 ? 'UNAUTHORIZED' : 'API_ERROR';
+      throw new NeoApiError(code, `NASA NeoWS HTTP ${res.status}: ${body.slice(0, 200)}`);
+    }
 
     const json = (await res.json()) as {
       near_earth_objects: Record<string, unknown[]>;
@@ -91,8 +104,11 @@ async function fetchBatch(startDate: Date, endDate: Date): Promise<NeoObject[]> 
     }
 
     return objects;
-  } finally {
+  } catch (err) {
     clearTimeout(timeoutId);
+    if (err instanceof NeoApiError) throw err;
+    // AbortError or network failure
+    throw new NeoApiError('NETWORK_ERROR', err instanceof Error ? err.message : 'Network error');
   }
 }
 

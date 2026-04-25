@@ -54,9 +54,9 @@ function modeBtn(active: boolean, isGreen = false): React.CSSProperties {
       ? (isGreen ? 'var(--hud-green)' : 'var(--hud-amber)')
       : 'var(--hud-green-dim)',
     fontFamily: "'Courier New', monospace",
-    fontSize: '10px',
-    letterSpacing: '0.15em',
-    padding: '3px 9px',
+    fontSize: '13px',
+    letterSpacing: '0.12em',
+    padding: '4px 10px',
     cursor: 'pointer',
     textTransform: 'uppercase' as const,
   };
@@ -174,7 +174,7 @@ export default function Home() {
             ))}
             {mode === 'live' && (
               <span style={{
-                fontSize: '10px', letterSpacing: '0.1em',
+                fontSize: '12px', letterSpacing: '0.08em',
                 color: ephemerisStatus === 'live' || ephemerisStatus === 'loading'
                   ? 'var(--hud-green-dim)' : 'var(--hud-warning)',
               }}>
@@ -211,9 +211,9 @@ export default function Home() {
                     ? (p === 'neo' ? 'var(--hud-warning)' : 'var(--hud-amber)')
                     : 'var(--hud-green-dim)',
                   fontFamily: "'Courier New', monospace",
-                  fontSize: '10px',
-                  letterSpacing: '0.15em',
-                  padding: '3px 9px',
+                  fontSize: '13px',
+                  letterSpacing: '0.12em',
+                  padding: '4px 10px',
                   cursor: 'pointer',
                   textTransform: 'uppercase' as const,
                 }}
@@ -224,12 +224,12 @@ export default function Home() {
           </div>
 
           {/* Centre */}
-          <div style={{ fontSize: "13px", letterSpacing: "0.3em", color: "var(--hud-amber)", textTransform: "uppercase" }}>
+          <div style={{ fontSize: "15px", letterSpacing: "0.25em", color: "var(--hud-amber)", textTransform: "uppercase" }}>
             ◈ RETRO STELLAR NAVIGATION CONSOLE ◈
           </div>
 
           {/* Right */}
-          <div style={{ fontSize: "10px", letterSpacing: "0.12em", color: "var(--hud-green-dim)", textTransform: "uppercase", textAlign: "right" }}>
+          <div style={{ fontSize: "12px", letterSpacing: "0.1em", color: "var(--hud-green-dim)", textTransform: "uppercase", textAlign: "right" }}>
             BODIES: {totalBodies}<br />
             {activeTarget ? `TARGET: ${activeTarget.slice(0, 18).toUpperCase()}` : "AWAITING LOCK"}
           </div>
@@ -321,9 +321,9 @@ function SourceChip({ label, value, color, detail }: {
       display: 'flex',
       alignItems: 'center',
       gap: '6px',
-      fontSize: '10px',
+      fontSize: '12px',
       fontFamily: "'Courier New', monospace",
-      letterSpacing: '0.07em',
+      letterSpacing: '0.06em',
       textTransform: 'uppercase',
     }}>
       <span style={{ color: 'var(--hud-green-faint)' }}>{label}:</span>
@@ -417,9 +417,9 @@ function DataSourceFooter({
     }}>
       {/* Left: app signature */}
       <span style={{
-        fontSize: '9px',
+        fontSize: '11px',
         fontFamily: "'Courier New', monospace",
-        letterSpacing: '0.1em',
+        letterSpacing: '0.08em',
         color: 'var(--hud-green-faint)',
         textTransform: 'uppercase',
       }}>

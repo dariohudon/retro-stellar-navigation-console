@@ -8,7 +8,8 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 3007,
         HOSTNAME: "0.0.0.0",
-        // NASA_API_KEY: "your-key-here",  // optional — defaults to DEMO_KEY (30 req/hr)
+        // Get a free key at https://api.nasa.gov/ (60 req/hr vs DEMO_KEY's 10 req/hr)
+        // NASA_API_KEY: "PASTE_YOUR_KEY_HERE",
       },
     },
   ],

@@ -85,8 +85,8 @@ body::after {
 }
 
 .hud-panel-title {
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: 12px;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--hud-green-dim);
   border-bottom: 1px solid var(--hud-border);
@@ -114,8 +114,8 @@ body::after {
 /* ─── Typography utilities ───────────────────── */
 
 .hud-label {
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  font-size: 12px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--hud-green-faint);
 }

@@ -30,11 +30,11 @@ function Row({
       display: "flex",
       justifyContent: "space-between",
       alignItems: "baseline",
-      fontSize: "12px",
-      letterSpacing: "0.05em",
-      lineHeight: 1.95,
+      fontSize: "14px",
+      letterSpacing: "0.04em",
+      lineHeight: 1.9,
     }}>
-      <span style={{ color: "var(--hud-green-dim)", flexShrink: 0, marginRight: "8px", fontSize: "10px", letterSpacing: "0.07em" }}>
+      <span style={{ color: "var(--hud-green-dim)", flexShrink: 0, marginRight: "8px", fontSize: "12px", letterSpacing: "0.05em" }}>
         {label}
       </span>
       <span style={{ color: bright ? "var(--hud-amber)" : "var(--hud-green-mid)", textAlign: "right" }}>
@@ -47,8 +47,8 @@ function Row({
 function BigName({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      fontSize: "24px",
-      letterSpacing: "0.25em",
+      fontSize: "28px",
+      letterSpacing: "0.2em",
       color: "var(--hud-amber)",
       textTransform: "uppercase",
       marginTop: "4px",
@@ -74,9 +74,9 @@ function Lbl({ children, mt }: { children: React.ReactNode; mt?: string }) {
 function FieldIntel({ text }: { text: string }) {
   return (
     <div style={{
-      fontSize: "11px",
+      fontSize: "13px",
       color: "var(--hud-green-dim)",
-      lineHeight: 1.8,
+      lineHeight: 1.75,
       letterSpacing: "0.02em",
       marginTop: "2px",
     }}>
@@ -89,11 +89,11 @@ function NavLockBadge({ label = "NAV LOCK CONFIRMED" }: { label?: string }) {
   return (
     <div style={{
       textAlign: "center",
-      fontSize: "11px",
-      letterSpacing: "0.18em",
+      fontSize: "13px",
+      letterSpacing: "0.15em",
       color: "var(--hud-green)",
       textTransform: "uppercase",
-      padding: "7px 0",
+      padding: "8px 0",
     }}>
       ◈ {label} ◈
     </div>
@@ -130,9 +130,9 @@ function PlanetView({
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        fontSize: "10px",
-        letterSpacing: "0.12em",
-        padding: "4px 0",
+        fontSize: "12px",
+        letterSpacing: "0.1em",
+        padding: "5px 0",
         marginBottom: "2px",
       }}>
         <span style={{ color: "var(--hud-green-faint)" }}>DATA MODE</span>
@@ -179,10 +179,10 @@ function PlanetView({
       <hr className="hud-separator" />
       <Lbl>NATURAL SATELLITES:</Lbl>
       <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "4px", marginBottom: "10px" }}>
-        <span style={{ fontSize: "36px", letterSpacing: "0.06em", color: "var(--hud-amber)", lineHeight: 1 }}>
+        <span style={{ fontSize: "42px", letterSpacing: "0.05em", color: "var(--hud-amber)", lineHeight: 1 }}>
           {planet.moons}
         </span>
-        <span style={{ fontSize: "10px", color: "var(--hud-green-dim)", letterSpacing: "0.1em" }}>
+        <span style={{ fontSize: "12px", color: "var(--hud-green-dim)", letterSpacing: "0.08em" }}>
           CONFIRMED
         </span>
       </div>
@@ -227,14 +227,14 @@ function ObjectView({ object }: { object: CelestialObject }) {
 
       <hr className="hud-separator" />
       <Lbl>NOTABLE:</Lbl>
-      <div style={{ fontSize: "11px", color: "var(--hud-green-dim)", lineHeight: 1.75, letterSpacing: "0.02em", marginTop: "2px" }}>
+      <div style={{ fontSize: "13px", color: "var(--hud-green-dim)", lineHeight: 1.7, letterSpacing: "0.02em", marginTop: "2px" }}>
         {object.notableFacts.map((fact, i) => (
           <div key={i}>· {fact}</div>
         ))}
       </div>
 
       <hr className="hud-separator" />
-      <div style={{ fontSize: "9px", color: "var(--hud-green-faint)", letterSpacing: "0.08em", marginBottom: "4px" }}>
+      <div style={{ fontSize: "11px", color: "var(--hud-green-faint)", letterSpacing: "0.07em", marginBottom: "4px" }}>
         SOURCE: {object.sourceLabel}
       </div>
       <NavLockBadge />
@@ -254,7 +254,7 @@ function SectorView({ sector }: { sector: Sector }) {
 
       <hr className="hud-separator" />
       <Lbl>PRIMARY BODIES:</Lbl>
-      <div style={{ fontSize: "11px", color: "var(--hud-green-mid)", letterSpacing: "0.04em", lineHeight: 1.8, marginTop: "2px", marginBottom: "6px" }}>
+      <div style={{ fontSize: "13px", color: "var(--hud-green-mid)", letterSpacing: "0.03em", lineHeight: 1.75, marginTop: "2px", marginBottom: "6px" }}>
         {sector.primaryBodies.split(", ").map((b) => (
           <div key={b}>· {b}</div>
         ))}
@@ -273,13 +273,13 @@ function SectorView({ sector }: { sector: Sector }) {
 // ── Idle view ─────────────────────────────────────────────────────────────────
 function IdleView() {
   return (
-    <div style={{ fontSize: "12px", color: "var(--hud-green-dim)", letterSpacing: "0.06em", lineHeight: 2.1, textTransform: "uppercase" }}>
+    <div style={{ fontSize: "14px", color: "var(--hud-green-dim)", letterSpacing: "0.05em", lineHeight: 2.0, textTransform: "uppercase" }}>
       <div>BODY: —</div>
       <div>CLASSIFICATION: —</div>
       <div>DISTANCE: —</div>
       <div>SECTOR: —</div>
       <br />
-      <div style={{ color: "var(--hud-green-faint)", fontSize: "11px" }}>
+      <div style={{ color: "var(--hud-green-faint)", fontSize: "13px" }}>
         SELECT A TARGET ON THE<br />
         MAP OR USE THE NAV<br />
         CONSOLE TO ACQUIRE<br />
@@ -331,16 +331,16 @@ function NeoView({ neo }: { neo: NeoObject }) {
       <Row label="ABS MAG H" value={neo.absoluteMagnitude.toFixed(1)} />
 
       <hr className="hud-separator" />
-      <div style={{ fontSize: '9px', color: 'var(--hud-green-faint)', letterSpacing: '0.08em', marginBottom: '4px' }}>
+      <div style={{ fontSize: '11px', color: 'var(--hud-green-faint)', letterSpacing: '0.07em', marginBottom: '4px' }}>
         SOURCE: NASA NeoWS API
       </div>
 
       <div style={{
         textAlign: 'center',
-        fontSize: '11px',
-        letterSpacing: '0.18em',
+        fontSize: '13px',
+        letterSpacing: '0.15em',
         color: statusColor,
-        padding: '7px 0',
+        padding: '8px 0',
         textTransform: 'uppercase',
       }}>
         ◈ {statusLabel} ◈

@@ -30,12 +30,11 @@ const OBJECT_TYPE_CODES: Record<string, string> = {
   "Scattered Disc Object":  "SDO",
 };
 
-// ── Section title — clearly dominant over list items ─────────────────────────
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      fontSize: '11px',
-      letterSpacing: '0.13em',
+      fontSize: '13px',
+      letterSpacing: '0.1em',
       textTransform: 'uppercase',
       color: 'var(--hud-green-mid)',
       borderBottom: '1px solid rgba(255,255,255,0.07)',
@@ -47,7 +46,6 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ── Nav list item ─────────────────────────────────────────────────────────────
 function navBtn(active: boolean): React.CSSProperties {
   return {
     display: "flex",
@@ -60,20 +58,19 @@ function navBtn(active: boolean): React.CSSProperties {
     borderLeft: `3px solid ${active ? "var(--hud-green)" : "transparent"}`,
     color: active ? "var(--hud-green)" : "var(--hud-green-dim)",
     fontFamily: "'Courier New', monospace",
-    fontSize: "13px",
-    letterSpacing: "0.06em",
-    padding: "3px 7px",
+    fontSize: "15px",
+    letterSpacing: "0.05em",
+    padding: "4px 7px",
     cursor: "pointer",
     textTransform: "uppercase",
-    lineHeight: 1.65,
+    lineHeight: 1.6,
   };
 }
 
-// ── Type badge ────────────────────────────────────────────────────────────────
 function TypeBadge({ code }: { code: string }) {
   return (
     <span style={{
-      fontSize: "9px",
+      fontSize: "11px",
       letterSpacing: "0.04em",
       color: "var(--hud-green-faint)",
       flexShrink: 0,
@@ -83,7 +80,6 @@ function TypeBadge({ code }: { code: string }) {
   );
 }
 
-// ── Compact section separator ─────────────────────────────────────────────────
 function Sep() {
   return <hr style={{ border: 'none', borderTop: '1px solid var(--hud-border)', margin: '8px 0' }} />;
 }
@@ -121,7 +117,6 @@ export default function NavigationConsole({
     <div style={{ width: "240px", flexShrink: 0, display: "flex", flexDirection: "column" }}>
       <HudPanel title="NAVIGATION CONSOLE">
 
-        {/* ── Jump to Sector ─────────────────── */}
         <SectionTitle>JUMP TO SECTOR:</SectionTitle>
         <div style={{ marginBottom: "2px" }}>
           {sectors.map((s) => {
@@ -137,7 +132,6 @@ export default function NavigationConsole({
 
         <Sep />
 
-        {/* ── Jump to Planet ─────────────────── */}
         <SectionTitle>JUMP TO PLANET:</SectionTitle>
         <div style={{ marginBottom: "2px" }}>
           {planets.map((p) => {
@@ -153,7 +147,6 @@ export default function NavigationConsole({
 
         <Sep />
 
-        {/* ── Jump to Object ─────────────────── */}
         <SectionTitle>JUMP TO OBJECT:</SectionTitle>
         <div style={{ marginBottom: "2px" }}>
           {objects.map((o) => {
@@ -169,14 +162,13 @@ export default function NavigationConsole({
 
         <Sep />
 
-        {/* ── Nav lock status ────────────────── */}
         <SectionTitle>NAV STATUS:</SectionTitle>
-        <div style={{ fontSize: "12px", letterSpacing: "0.08em", marginBottom: "4px", lineHeight: 1.8 }}>
+        <div style={{ fontSize: "14px", letterSpacing: "0.07em", marginBottom: "4px", lineHeight: 1.75 }}>
           {anySelected ? (
             <>
-              <div style={{ color: "var(--hud-green)", letterSpacing: "0.12em" }}>LOCK ACQUIRED</div>
+              <div style={{ color: "var(--hud-green)", letterSpacing: "0.1em" }}>LOCK ACQUIRED</div>
               <div style={{ color: "var(--hud-green-mid)", marginTop: "2px" }}>{lockLabel}</div>
-              <div style={{ fontSize: "10px", color: "var(--hud-green-dim)", marginTop: "2px" }}>{lockSub}</div>
+              <div style={{ fontSize: "12px", color: "var(--hud-green-dim)", marginTop: "2px" }}>{lockSub}</div>
             </>
           ) : (
             <div style={{ color: "var(--hud-green-dim)" }}>
@@ -187,9 +179,8 @@ export default function NavigationConsole({
 
         <Sep />
 
-        {/* ── System status ──────────────────── */}
         <SectionTitle>SYSTEM STATUS:</SectionTitle>
-        <div style={{ fontSize: "11px", color: "var(--hud-green-dim)", letterSpacing: "0.07em", lineHeight: 1.9 }}>
+        <div style={{ fontSize: "13px", color: "var(--hud-green-dim)", letterSpacing: "0.06em", lineHeight: 1.9 }}>
           <div>STAR    <span style={{ float: "right", color: "var(--hud-green-mid)" }}>G-TYPE / SOL</span></div>
           <div>PLANETS <span style={{ float: "right", color: "var(--hud-green-mid)" }}>{planets.length} CONFIRMED</span></div>
           <div>OBJECTS <span style={{ float: "right", color: "var(--hud-green-mid)" }}>{objects.length} CATALOGUED</span></div>
@@ -199,7 +190,7 @@ export default function NavigationConsole({
 
         <Sep />
 
-        <div style={{ fontSize: "9px", color: "var(--hud-green-faint)", letterSpacing: "0.1em", textAlign: "center", lineHeight: 1.8 }}>
+        <div style={{ fontSize: "11px", color: "var(--hud-green-faint)", letterSpacing: "0.08em", textAlign: "center", lineHeight: 1.8 }}>
           <div>STELLARNAV CONSOLE</div>
           <div>REV 2.0 // PHASE III</div>
         </div>
