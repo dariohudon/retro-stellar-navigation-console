@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Retro Stellar Navigation Console
 
-## Getting Started
+A self-hosted mission-control style solar system dashboard built with Next.js, React, and NASA/JPL data sources.
 
-First, run the development server:
+This is not a traditional astronomy viewer. It is a cinematic Space Command Centre: tactical navigation, live planetary positions, Near-Earth Object tracking, sector mapping, and retro HUD visuals.
+
+---
+
+## Core Features
+
+- 2D tactical solar system map
+- Live planetary positioning via NASA/JPL Horizons
+- Schematic and Live display modes
+- Sector navigation:
+  - Inner System
+  - Asteroid Belt
+  - Outer Planets
+  - Kuiper Belt
+  - Deep System
+- Moons, dwarf planets, and trans-Neptunian objects
+- Near-Earth Object Threat Console using NASA NeoWs
+- Target Data panel with live/static/fallback status
+- Retro white phosphor HUD with green active-state highlights
+- Self-hosted deployment using PM2 + Cloudflare Tunnel
+
+---
+
+## Tech Stack
+
+- Next.js
+- React
+- TypeScript
+- SVG tactical map rendering
+- NASA/JPL Horizons
+- NASA NeoWs
+- PM2
+- Cloudflare Tunnel
+
+---
+
+## Live Data Sources
+
+### Ephemeris
+
+Planetary live-position data comes from:
+
+- NASA/JPL Horizons
+
+Used for:
+- current planetary positions
+- heliocentric/ecliptic coordinates
+- live mode display
+
+---
+
+### Near-Earth Objects
+
+NEO data comes from:
+
+- NASA Near Earth Object Web Service (NeoWs)
+
+Used for:
+- close approach date
+- miss distance
+- velocity
+- estimated diameter
+- potentially hazardous flag
+
+---
+
+## Environment Variables
+
+Create local environment file:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+nano .env.local
