@@ -74,3 +74,15 @@ Create local environment file:
 
 ```bash
 nano .env.local
+
+---
+
+## Interface Preview
+
+### Tactical Navigation Console
+
+![Retro Stellar Navigation Console Screenshot 1](https://i.imgur.com/kygXqnn.png)
+
+### #D View
+
+![Retro Stellar Navigation Console Screenshot 2](https://i.imgur.com/82HL44T.png)
