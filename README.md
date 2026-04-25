@@ -47,6 +47,7 @@ Planetary live-position data comes from:
 - NASA/JPL Horizons
 
 Used for:
+
 - current planetary positions
 - heliocentric/ecliptic coordinates
 - live mode display
@@ -60,6 +61,7 @@ NEO data comes from:
 - NASA Near Earth Object Web Service (NeoWs)
 
 Used for:
+
 - close approach date
 - miss distance
 - velocity
@@ -74,15 +76,3 @@ Create local environment file:
 
 ```bash
 nano .env.local
-
----
-
-## Interface Preview
-
-### Tactical Navigation Console
-
-![Retro Stellar Navigation Console Screenshot 1](https://i.imgur.com/kygXqnn.png)
-
-### #D View
-
-![Retro Stellar Navigation Console Screenshot 2](https://i.imgur.com/82HL44T.png)
