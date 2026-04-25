@@ -1,13 +1,14 @@
 export interface EphemerisPosition {
   id: string;
   name: string;
-  x: number;            // heliocentric ecliptic J2000, AU
-  y: number;            // heliocentric ecliptic J2000, AU
-  z: number;            // heliocentric ecliptic J2000, AU
+  x: number;            // heliocentric ecliptic J2000, AU  (x toward vernal equinox)
+  y: number;            // heliocentric ecliptic J2000, AU  (y toward ecliptic lon 90°)
+  z: number;            // heliocentric ecliptic J2000, AU  (z toward north ecliptic pole)
   distanceAU: number;   // sqrt(x²+y²+z²)
-  angleDeg: number;     // atan2(-y, x) in degrees — SVG-mapped, north-up
+  angleDeg: number;     // atan2(-y, x) — SVG north-up angle; negate-y maps ecliptic to SVG counter-clockwise
   timestamp: string;    // ISO UTC of ephemeris epoch
   source: string;
+  refFrame?: 'ICRF_J2000' | 'ECL_J2000';  // coordinate frame; undefined on fallback positions
   isLive: boolean;
   error?: string;
 }

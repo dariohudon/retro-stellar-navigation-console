@@ -57,6 +57,7 @@ export async function fetchPlanetPosition(
     MAKE_EPHEM: "'YES'",
     EPHEM_TYPE: "'VECTORS'",
     CENTER:     "'500@10'",    // heliocentric — observer at Sun centre
+    REF_PLANE:  "'ECLIPTIC'", // ecliptic J2000 frame — x toward vernal equinox, z toward north ecliptic pole
     START_TIME: `'${fmtDate(now)}'`,
     STOP_TIME:  `'${fmtDate(tomorrow)}'`,
     STEP_SIZE:  "'1 d'",
@@ -90,7 +91,11 @@ export async function fetchPlanetPosition(
     if (!vec) throw new Error('Horizons: failed to parse vector data');
 
     const distanceAU = Math.sqrt(vec.x ** 2 + vec.y ** 2 + vec.z ** 2);
-    // Flip y so the map is north-ecliptic-pole-up (planets orbit counter-clockwise)
+
+    // Map ecliptic J2000 to SVG angle for a north-ecliptic-pole-up map.
+    // In ECL_J2000: x = vernal equinox, y = ecliptic lon 90°, z = north ecliptic pole.
+    // SVG has y-axis pointing DOWN, so to get counter-clockwise visual orbit we negate y.
+    // atan2(-y, x) maps ecliptic lon 0→right, 90→top, 180→left, 270→bottom in SVG.
     const angleDeg = Math.atan2(-vec.y, vec.x) * (180 / Math.PI);
 
     return {
@@ -103,6 +108,7 @@ export async function fetchPlanetPosition(
       angleDeg,
       timestamp:  now.toISOString(),
       source:     'NASA/JPL Horizons',
+      refFrame:   'ECL_J2000',
       isLive:     true,
     };
   } finally {

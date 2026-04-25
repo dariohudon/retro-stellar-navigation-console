@@ -158,10 +158,15 @@ function PlanetView({
         <>
           <hr className="hud-separator" />
           <Lbl>LIVE POSITION (AU):</Lbl>
-          <Row label="X ECLIPTIC" value={livePos.x.toFixed(4)} bright />
-          <Row label="Y ECLIPTIC" value={livePos.y.toFixed(4)} bright />
-          <Row label="Z ECLIPTIC" value={livePos.z.toFixed(5)} />
-          <Row label="EPOCH UTC"  value={new Date(livePos.timestamp).toUTCString().slice(5, 22)} />
+          <Row label="X  ECL J2000" value={livePos.x.toFixed(4)} bright />
+          <Row label="Y  ECL J2000" value={livePos.y.toFixed(4)} bright />
+          <Row label="Z  ECL J2000" value={livePos.z.toFixed(5)} />
+          <Row label="EPOCH UTC"    value={new Date(livePos.timestamp).toUTCString().slice(5, 22)} />
+          {livePos.refFrame && (
+            <div style={{ fontSize: '10px', color: 'var(--hud-green-faint)', letterSpacing: '0.07em', marginTop: '2px' }}>
+              REF: {livePos.refFrame.replace('_', ' ')} — JPL HORIZONS
+            </div>
+          )}
         </>
       )}
 
