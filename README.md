@@ -25,6 +25,18 @@ This is not a traditional astronomy viewer. It is a cinematic Space Command Cent
 
 ---
 
+## Interface Preview
+
+### Tactical Navigation Console
+
+![Retro Stellar Navigation Console Screenshot 1](https://i.imgur.com/kygXqnn.png)
+
+### 3D View
+
+![Retro Stellar Navigation Console Screenshot 2](https://i.imgur.com/82HL44T.png)
+
+---
+
 ## Tech Stack
 
 - Next.js
