@@ -12,6 +12,7 @@ interface PlanetInfoPanelProps {
   mode: DisplayMode;
   ephemerisData: EphemerisResponse | null;
   selectedNeo: NeoObject | null;
+  extendedEphemerisData: EphemerisResponse | null;
 }
 
 // ── Shared primitives ─────────────────────────────────────────────────────────
@@ -203,8 +204,27 @@ function PlanetView({
 }
 
 // ── Celestial object view ─────────────────────────────────────────────────────
-function ObjectView({ object }: { object: CelestialObject }) {
+function ObjectView({
+  object,
+  extendedEphemerisData,
+}: {
+  object: CelestialObject;
+  extendedEphemerisData: EphemerisResponse | null;
+}) {
   const sectorName = SECTORS.find((s) => s.id === object.sector)?.name ?? object.sector;
+
+  const isOrbitingBody = object.parentPlanetId === null;
+  const livePos = isOrbitingBody ? (extendedEphemerisData?.positions[object.id] ?? null) : null;
+  const dataIsLive = livePos?.isLive === true;
+  const dataMode = dataIsLive
+    ? 'LIVE'
+    : (livePos && !livePos.isLive)
+      ? 'FALLBACK'
+      : 'SCHEMATIC';
+  const dataModeColor =
+    dataMode === 'LIVE'     ? 'var(--hud-green)'     :
+    dataMode === 'FALLBACK' ? 'var(--hud-warning)'    :
+                              'var(--hud-green-faint)';
 
   return (
     <div>
@@ -217,10 +237,49 @@ function ObjectView({ object }: { object: CelestialObject }) {
         <Row label="PARENT BODY" value={object.parentPlanetId.toUpperCase()} bright />
       )}
 
+      {isOrbitingBody && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '12px',
+          letterSpacing: '0.1em',
+          padding: '5px 0',
+          marginBottom: '2px',
+        }}>
+          <span style={{ color: 'var(--hud-green-faint)' }}>DATA MODE</span>
+          <span style={{ color: dataModeColor }}>{dataMode}</span>
+        </div>
+      )}
+
       <hr className="hud-separator" />
       <Lbl>ORBITAL DATA:</Lbl>
-      <Row label="DISTANCE" value={object.distanceAU} bright />
-      <Row label="REGION"   value={object.orbitRegion.toUpperCase()} />
+
+      {dataIsLive && livePos ? (
+        <>
+          <Row label="DISTANCE AU (LIVE)" value={livePos.distanceAU.toFixed(4)} bright />
+          <Row label="DISTANCE (REF)"     value={object.distanceAU} />
+        </>
+      ) : (
+        <Row label="DISTANCE" value={object.distanceAU} bright />
+      )}
+      <Row label="REGION" value={object.orbitRegion.toUpperCase()} />
+
+      {dataIsLive && livePos && (
+        <>
+          <hr className="hud-separator" />
+          <Lbl>LIVE POSITION (AU):</Lbl>
+          <Row label="X  ECL J2000" value={livePos.x.toFixed(4)} bright />
+          <Row label="Y  ECL J2000" value={livePos.y.toFixed(4)} bright />
+          <Row label="Z  ECL J2000" value={livePos.z.toFixed(5)} />
+          <Row label="EPOCH UTC"    value={new Date(livePos.timestamp).toUTCString().slice(5, 22)} />
+          {livePos.refFrame && (
+            <div style={{ fontSize: '10px', color: 'var(--hud-green-faint)', letterSpacing: '0.07em', marginTop: '2px' }}>
+              REF: {livePos.refFrame.replace('_', ' ')} — JPL HORIZONS
+            </div>
+          )}
+        </>
+      )}
 
       <hr className="hud-separator" />
       <Lbl>PHYSICAL:</Lbl>
@@ -362,6 +421,7 @@ export default function PlanetInfoPanel({
   mode,
   ephemerisData,
   selectedNeo,
+  extendedEphemerisData,
 }: PlanetInfoPanelProps) {
   return (
     <div style={{ width: "270px", flexShrink: 0, display: "flex", flexDirection: "column" }}>
@@ -371,7 +431,7 @@ export default function PlanetInfoPanel({
         ) : selectedPlanet ? (
           <PlanetView planet={selectedPlanet} mode={mode} ephemerisData={ephemerisData} />
         ) : selectedObject ? (
-          <ObjectView object={selectedObject} />
+          <ObjectView object={selectedObject} extendedEphemerisData={extendedEphemerisData} />
         ) : selectedSector ? (
           <SectorView sector={selectedSector} />
         ) : (

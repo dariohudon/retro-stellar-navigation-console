@@ -86,6 +86,8 @@ export default function Home() {
   const [mode,            setMode]            = useState<DisplayMode>('schematic');
   const [ephemerisData,   setEphemerisData]   = useState<EphemerisResponse | null>(null);
   const [ephemerisStatus, setEphemerisStatus] = useState<EphemerisStatus>('idle');
+  const [extendedEphData,   setExtendedEphData]   = useState<EphemerisResponse | null>(null);
+  const [extendedEphStatus, setExtendedEphStatus] = useState<EphemerisStatus>('idle');
 
   const fetchEphemeris = useCallback(async (force = false) => {
     setEphemerisStatus('loading');
@@ -98,10 +100,24 @@ export default function Home() {
     } catch { setEphemerisStatus('error'); }
   }, []);
 
+  const fetchExtendedEphemeris = useCallback(async (force = false) => {
+    setExtendedEphStatus('loading');
+    try {
+      const res  = await fetch(force ? '/api/ephemeris/extended?force=true' : '/api/ephemeris/extended');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: EphemerisResponse = await res.json();
+      setExtendedEphData(data);
+      setExtendedEphStatus(data.isLive ? 'live' : 'error');
+    } catch { setExtendedEphStatus('error'); }
+  }, []);
+
   const handleModeToggle = useCallback((newMode: DisplayMode) => {
     setMode(newMode);
-    if (newMode === 'live' && !ephemerisData && ephemerisStatus === 'idle') fetchEphemeris();
-  }, [ephemerisData, ephemerisStatus, fetchEphemeris]);
+    if (newMode === 'live') {
+      if (!ephemerisData && ephemerisStatus === 'idle') fetchEphemeris();
+      if (!extendedEphData && extendedEphStatus === 'idle') fetchExtendedEphemeris();
+    }
+  }, [ephemerisData, ephemerisStatus, fetchEphemeris, extendedEphData, extendedEphStatus, fetchExtendedEphemeris]);
 
   // ── Map view mode ─────────────────────────────────────────────────────────
   const [mapMode, setMapMode] = useState<MapMode>('2d');
@@ -272,6 +288,7 @@ export default function Home() {
           selectedPlanet={selectedPlanet} selectedObject={selectedObject}
           selectedSector={selectedSector} mode={mode} ephemerisData={ephemerisData}
           selectedNeo={selectedNeo}
+          extendedEphemerisData={extendedEphData}
         />
       </main>
 
@@ -282,6 +299,8 @@ export default function Home() {
         ephemerisData={ephemerisData}
         neoStatus={neoStatus}
         neoData={neoData}
+        extendedEphStatus={extendedEphStatus}
+        extendedEphData={extendedEphData}
       />
     </div>
   );
@@ -303,11 +322,13 @@ function fmtUtcTime(iso: string): string {
 // ── Data source footer component ─────────────────────────────────────────────
 
 interface DataSourceFooterProps {
-  mode:             DisplayMode;
-  ephemerisStatus:  EphemerisStatus;
-  ephemerisData:    EphemerisResponse | null;
-  neoStatus:        'idle' | 'loading' | 'live' | 'error';
-  neoData:          NeoResponse | null;
+  mode:              DisplayMode;
+  ephemerisStatus:   EphemerisStatus;
+  ephemerisData:     EphemerisResponse | null;
+  neoStatus:         'idle' | 'loading' | 'live' | 'error';
+  neoData:           NeoResponse | null;
+  extendedEphStatus: EphemerisStatus;
+  extendedEphData:   EphemerisResponse | null;
 }
 
 function SourceChip({ label, value, color, detail }: {
@@ -339,6 +360,8 @@ function DataSourceFooter({
   ephemerisData,
   neoStatus,
   neoData,
+  extendedEphStatus,
+  extendedEphData,
 }: DataSourceFooterProps) {
   // ── Ephemeris chip ────────────────────────────────────────────────────────
   let ephText  = 'STATIC LAYOUT';
@@ -405,6 +428,36 @@ function DataSourceFooter({
     }
   }
 
+  // ── Extended bodies chip ──────────────────────────────────────────────────
+  const showExt = extendedEphStatus !== 'idle';
+  let extText   = 'JPL HORIZONS';
+  let extColor  = 'var(--hud-green-faint)';
+  let extDetail: string | undefined;
+
+  if (extendedEphStatus === 'loading') {
+    extText  = 'JPL HORIZONS — FETCHING';
+    extColor = 'var(--hud-green-dim)';
+  } else if (extendedEphStatus === 'error') {
+    extText  = 'JPL HORIZONS — FALLBACK';
+    extColor = 'var(--hud-warning)';
+  } else if (extendedEphData) {
+    if (extendedEphData.isLive) {
+      const time = fmtUtcTime(extendedEphData.timestamp);
+      if (extendedEphData.fromCache) {
+        extText   = 'NASA/JPL HORIZONS';
+        extColor  = 'var(--hud-warning)';
+        extDetail = `CACHE ${fmtAge(extendedEphData.cacheAgeSeconds)} AGO // ${time}`;
+      } else {
+        extText   = 'NASA/JPL HORIZONS';
+        extColor  = 'var(--hud-green)';
+        extDetail = `LIVE // ${time}`;
+      }
+    } else {
+      extText  = 'JPL HORIZONS — STATIC FALLBACK';
+      extColor = 'var(--hud-warning)';
+    }
+  }
+
   return (
     <footer style={{
       flexShrink: 0,
@@ -440,6 +493,14 @@ function DataSourceFooter({
             value={neoText}
             color={neoColor}
             detail={neoDetail}
+          />
+        )}
+        {showExt && (
+          <SourceChip
+            label="EXT BODIES"
+            value={extText}
+            color={extColor}
+            detail={extDetail}
           />
         )}
       </div>
