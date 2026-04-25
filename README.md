@@ -37,7 +37,7 @@ This is not a traditional astronomy viewer. It is a cinematic Space Command Cent
 
 ### NEO Threat Console
 
-![Retro Stellar Navigation Console Screenshot 3](https://imgur.com/a/TuaCDLG#jzD20at.png)
+![Retro Stellar Navigation Console Screenshot 3](https://imgur.com/a/TuaCDLG.png)
 
 ---
 
