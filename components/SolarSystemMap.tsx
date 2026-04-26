@@ -10,7 +10,9 @@ import PlanetNode from "./PlanetNode";
 import ObjectNode from "./ObjectNode";
 import SectorBand from "./SectorBand";
 import NeoMarker from "./NeoMarker";
+import SpacecraftIndicators from "./SpacecraftIndicators";
 import { NeoObject } from "@/lib/neo/types";
+import { SpacecraftResponse } from "@/lib/spacecraft/types";
 
 interface SolarSystemMapProps {
   planets: Planet[];
@@ -28,6 +30,7 @@ interface SolarSystemMapProps {
   ephemerisStatus: EphemerisStatus;
   onRefreshEphemeris: (force?: boolean) => void;
   extendedEphemerisData?: EphemerisResponse | null;
+  spacecraftData?:        SpacecraftResponse | null;
   // NEO
   neoObjects: NeoObject[];
   selectedNeo: NeoObject | null;
@@ -63,6 +66,7 @@ export default function SolarSystemMap({
   ephemerisStatus,
   onRefreshEphemeris,
   extendedEphemerisData,
+  spacecraftData,
   neoObjects,
   selectedNeo,
   onSelectNeo,
@@ -371,6 +375,11 @@ export default function SolarSystemMap({
               />
             );
           })()}
+
+          {/* Spacecraft indicators — Parker inner-system + deep-space edge bearings */}
+          {spacecraftData && (
+            <SpacecraftIndicators spacecraftData={spacecraftData} mode={mode} />
+          )}
 
           {/* Scale indicator */}
           <g transform="translate(-570, 540)">

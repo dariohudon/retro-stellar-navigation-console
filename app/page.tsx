@@ -308,6 +308,7 @@ export default function Home() {
             neoObjects={neoObjects}
             selectedNeo={selectedNeo}
             onSelectNeo={selectNeo}
+            spacecraftData={spacecraftData}
           />
         ) : (
           <OrbitalMap3D {...mapProps} />
