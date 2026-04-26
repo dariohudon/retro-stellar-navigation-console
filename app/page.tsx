@@ -16,9 +16,10 @@ import NavigationConsole from "@/components/NavigationConsole";
 import NeoThreatConsole from "@/components/NeoThreatConsole";
 import SolarSystemMap from "@/components/SolarSystemMap";
 import PlanetInfoPanel from "@/components/PlanetInfoPanel";
+import MissionAssetsPanel from "@/components/MissionAssetsPanel";
 
 type MapMode    = '2d' | '3d';
-type LeftPanel  = 'nav' | 'neo';
+type LeftPanel  = 'nav' | 'neo' | 'missions';
 type WindowDays = 1 | 7 | 30;
 
 const OrbitalMap3D = dynamic(
@@ -144,7 +145,8 @@ export default function Home() {
   const [neoWindowDays, setNeoWindowDays] = useState<WindowDays>(7);
   const [neoData,      setNeoData]      = useState<NeoResponse | null>(null);
   const [neoStatus,    setNeoStatus]    = useState<'idle' | 'loading' | 'live' | 'error'>('idle');
-  const neoFetched = useRef(false);
+  const neoFetched      = useRef(false);
+  const missionsFetched = useRef(false);
 
   const fetchNeo = useCallback(async (days: WindowDays, force = false) => {
     setNeoStatus('loading');
@@ -162,6 +164,10 @@ export default function Home() {
     if (panel === 'neo' && !neoFetched.current) {
       neoFetched.current = true;
       fetchNeo(neoWindowDays);
+    }
+    if (panel === 'missions' && !spacecraftData && spacecraftStatus === 'idle') {
+      missionsFetched.current = true;
+      fetchSpacecraft();
     }
   };
 
@@ -230,7 +236,7 @@ export default function Home() {
             <span style={{ color: 'var(--hud-border)', fontSize: '10px', margin: '0 4px' }}>│</span>
 
             {/* Left panel toggle */}
-            {(['nav', 'neo'] as LeftPanel[]).map(p => (
+            {(['nav', 'neo', 'missions'] as LeftPanel[]).map(p => (
               <button
                 key={p}
                 onClick={() => handleSetLeftPanel(p)}
@@ -252,7 +258,7 @@ export default function Home() {
                   textTransform: 'uppercase' as const,
                 }}
               >
-                {p === 'neo' ? '⚠ NEO' : '◱ NAV'}
+                {p === 'neo' ? '⚠ NEO' : p === 'missions' ? '◎ MISS' : '◱ NAV'}
               </button>
             ))}
           </div>
@@ -280,12 +286,18 @@ export default function Home() {
             selectedPlanet={selectedPlanet} selectedObject={selectedObject} selectedSector={selectedSector}
             onSelectPlanet={selectPlanet} onSelectObject={selectObject} onSelectSector={selectSector}
           />
-        ) : (
+        ) : leftPanel === 'neo' ? (
           <NeoThreatConsole
             neoData={neoData} neoStatus={neoStatus}
             windowDays={neoWindowDays} onChangeWindow={handleNeoWindowChange}
             onRefresh={fetchNeo.bind(null, neoWindowDays)}
             selectedNeo={selectedNeo} onSelectNeo={selectNeo}
+          />
+        ) : (
+          <MissionAssetsPanel
+            spacecraftData={spacecraftData}
+            spacecraftStatus={spacecraftStatus}
+            onRefresh={fetchSpacecraft}
           />
         )}
 
