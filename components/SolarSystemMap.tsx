@@ -27,6 +27,7 @@ interface SolarSystemMapProps {
   ephemerisData: EphemerisResponse | null;
   ephemerisStatus: EphemerisStatus;
   onRefreshEphemeris: (force?: boolean) => void;
+  extendedEphemerisData?: EphemerisResponse | null;
   // NEO
   neoObjects: NeoObject[];
   selectedNeo: NeoObject | null;
@@ -61,6 +62,7 @@ export default function SolarSystemMap({
   ephemerisData,
   ephemerisStatus,
   onRefreshEphemeris,
+  extendedEphemerisData,
   neoObjects,
   selectedNeo,
   onSelectNeo,
@@ -149,15 +151,25 @@ export default function SolarSystemMap({
     [isDragging, toSvgDelta]
   );
 
-  // Build live angle lookup — only populated in LIVE mode
+  // Build live angle lookup — populated in LIVE mode for planets + parentless extended bodies
   const liveAngles = useMemo<Record<string, number>>(() => {
-    if (mode !== 'live' || !ephemerisData) return {};
+    if (mode !== 'live') return {};
     const out: Record<string, number> = {};
-    for (const [id, pos] of Object.entries(ephemerisData.positions)) {
-      if (pos.isLive) out[id] = pos.angleDeg;
+    if (ephemerisData) {
+      for (const [id, pos] of Object.entries(ephemerisData.positions)) {
+        if (pos.isLive) out[id] = pos.angleDeg;
+      }
+    }
+    if (extendedEphemerisData) {
+      for (const [id, pos] of Object.entries(extendedEphemerisData.positions)) {
+        // Only parentless bodies — moons must never get a heliocentric live angle
+        if (pos.isLive && objects.some(o => o.id === id && o.parentPlanetId === null)) {
+          out[id] = pos.angleDeg;
+        }
+      }
     }
     return out;
-  }, [mode, ephemerisData]);
+  }, [mode, ephemerisData, extendedEphemerisData, objects]);
 
   // Status bar text for the live mode indicator
   const liveBarContent = useMemo(() => {
@@ -337,6 +349,8 @@ export default function SolarSystemMap({
               isSelected={selectedObject?.id === o.id}
               onClick={() => onSelectObject(o)}
               planets={planets}
+              liveAngleDeg={liveAngles[o.id]}
+              isLiveData={mode === 'live' && liveAngles[o.id] !== undefined}
             />
           ))}
 

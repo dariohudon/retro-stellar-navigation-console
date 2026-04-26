@@ -1,16 +1,29 @@
 # Retro Stellar Navigation Console
 
-A self-hosted mission-control style solar system dashboard built with Next.js, React, and NASA/JPL data sources.
+A self-hosted mission-control style solar system dashboard built with Next.js, React, and NASA/JPL live astronomy data.
 
-This is not a traditional astronomy viewer. It is a cinematic Space Command Centre: tactical navigation, live planetary positions, Near-Earth Object tracking, sector mapping, and retro HUD visuals.
+This is not a traditional astronomy viewer.
+
+It is a cinematic **Space Command Centre** — built for tactical navigation, live planetary positioning, Near-Earth Object tracking, sector mapping, and retro HUD visualization.
+
+The goal is:
+
+**NASA + sci-fi cinema + tactical systems design**
+
+—not—
+
+generic astronomy dashboard software
+
+Retro Stellar is designed to feel like a real navigation console: part observatory, part mission control, part orbital intelligence system.
 
 ---
 
 ## Core Features
 
 - 2D tactical solar system map
+- Optional 3D orbital visualization mode
 - Live planetary positioning via NASA/JPL Horizons
-- Schematic and Live display modes
+- Schematic + Live display modes
 - Sector navigation:
   - Inner System
   - Asteroid Belt
@@ -18,8 +31,10 @@ This is not a traditional astronomy viewer. It is a cinematic Space Command Cent
   - Kuiper Belt
   - Deep System
 - Moons, dwarf planets, and trans-Neptunian objects
+- Live secondary body tracking (Pluto + Ceres)
 - Near-Earth Object Threat Console using NASA NeoWs
-- Target Data panel with live/static/fallback status
+- Target Data panel with LIVE / CACHE / FALLBACK visibility
+- Tactical object selection + target lock system
 - Retro white phosphor HUD with green active-state highlights
 - Self-hosted deployment using PM2 + Cloudflare Tunnel
 
@@ -54,41 +69,241 @@ This is not a traditional astronomy viewer. It is a cinematic Space Command Cent
 
 ---
 
-## Live Data Sources
+## Live Data Architecture
 
-### Ephemeris
+### Lane 1 — Planetary Ephemeris
 
-Planetary live-position data comes from:
+**Endpoint:** `/api/ephemeris`
 
-- NASA/JPL Horizons
+Provides live positioning for the 8 major planets:
 
-Used for:
+- Mercury
+- Venus
+- Earth
+- Mars
+- Jupiter
+- Saturn
+- Uranus
+- Neptune
 
-- current planetary positions
-- heliocentric/ecliptic coordinates
-- live mode display
+Data includes:
+
+- heliocentric X / Y / Z coordinates
+- distance from the Sun (AU)
+- live angular position (`angleDeg`)
+- timestamp
+- source attribution
+- cache/fallback state
+- reference frame metadata
+
+Reference frame:
+
+**ECL J2000 (heliocentric ecliptic)**
+
+This replaced the earlier default ICRF frame and corrected orbital accuracy for true heliocentric ecliptic positioning.
+
+Examples:
+
+- Earth correctly resolves near Z ≈ 0 AU
+- planetary angles reflect true heliocentric ecliptic longitude
 
 ---
 
-### Near-Earth Objects
+### Lane 2 — Near-Earth Objects (NEO)
 
-NEO data comes from:
+**Endpoint:** `/api/neo`
 
-- NASA Near Earth Object Web Service (NeoWs)
-
-Used for:
+Uses NASA Near Earth Object Web Service (NeoWs) for:
 
 - close approach date
 - miss distance
 - velocity
 - estimated diameter
 - potentially hazardous flag
+- closest-pass summaries
+
+Important rule:
+
+NASA NeoWs does **not** provide exact cinematic trajectories.
+
+Allowed:
+
+- encounter rings
+- schematic approach vectors
+- closest-pass indicators
+- Earth proximity visuals
+
+Forbidden:
+
+- fake exact trajectories
+- exaggerated threat implications
+- false scientific claims
+
+All vectors remain labeled:
+
+**SCHEMATIC APPROACH VECTOR**
+
+---
+
+### Lane 2.5 — Live Secondary Bodies
+
+**Endpoint:** `/api/ephemeris/extended`
+
+Provides live JPL Horizons positioning for:
+
+### Dwarf Planets
+
+- Pluto
+- Ceres
+
+### Major Moons
+
+- Io
+- Europa
+- Ganymede
+- Callisto
+- Titan
+- Triton
+
+### Parentless Bodies
+
+Pluto and Ceres use:
+
+- live JPL angular position
+- schematic orbit radius
+
+This preserves real directional accuracy while keeping the tactical map intentionally not-to-scale and visually readable.
+
+### Moons
+
+Moons remain visually schematic on the main orbital map.
+
+Reason:
+
+Heliocentric moon positions from JPL are nearly coincident with their parent planets and would visually stack directly on top of their parent worlds.
+
+Instead:
+
+- moons retain schematic placement
+- live ephemeris supports detail panels
+- future mission layers may expand this further
+
+---
+
+## Current Phase
+
+### Step 2 — Live Secondary Bodies
+
+**Status: Nearly Complete**
+
+### 2A — Endpoint Live
+
+Extended ephemeris endpoint added and verified.
+
+### 2B — UI Reads Extended Data
+
+LIVE mode now fetches:
+
+`/api/ephemeris/extended`
+
+Footer shows:
+
+**EXT BODIES — LIVE / CACHE / FALLBACK**
+
+Info panel supports:
+
+- LIVE mode badge
+- distance AU (LIVE)
+- ECL J2000 coordinates
+- timestamp
+- JPL attribution
+
+### 2C — Pluto + Ceres Live Tracking
+
+Pluto and Ceres now use:
+
+- live JPL `angleDeg`
+
+while keeping:
+
+- schematic `orbitRadius`
+
+This turns them from visual props into real tracked celestial targets.
+
+Moons remain intentionally unchanged.
+
+---
+
+## Phase 4 Roadmap
+
+### Step 3 — Spacecraft / Mission Asset Lane
+
+Future endpoint:
+
+`/api/spacecraft`
+
+Examples:
+
+- James Webb Space Telescope
+- Voyager 1 / 2
+- ISS
+- Hubble
+- Parker Solar Probe
+- Europa Clipper
+
+Earth-orbiting assets will use dedicated orbital panels or insets—not heliocentric plotting.
+
+---
+
+### Step 4 — Tactical Sector Grid Overlay
+
+- sector labels
+- radial rings
+- tactical grid overlay
+- approach sectors
+- target lock zones
+
+---
+
+### Step 5 — Orbital Intelligence Layer
+
+- closest-pass indicators
+- encounter rings
+- hazardous watchlists
+- target lock systems
+- tactical nearest-object summaries
+
+---
+
+### Step 6 — Mission Control Mode
+
+The unified “wow” layer.
+
+Planets + NEOs + secondary bodies + spacecraft + tactical overlays combined into a true mission-control console.
+
+---
+
+## Data Integrity Rules
+
+The project never presents schematic visuals as scientific truth.
+
+Required visible labels include:
+
+- LIVE DATA
+- SCHEMATIC
+- CACHE
+- FALLBACK
+- NASA/JPL Horizons
+
+Core architectural rule:
+
+**Never imply precision where precision does not exist.**
 
 ---
 
 ## Environment Variables
 
-Create local environment file:
+Create a local environment file:
 
 ```bash
 nano .env.local

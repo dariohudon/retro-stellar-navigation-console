@@ -6,13 +6,17 @@ interface ObjectNodeProps {
   isSelected: boolean;
   onClick: () => void;
   planets: Planet[];
+  liveAngleDeg?: number;
+  isLiveData?: boolean;
 }
 
 export function getObjectPosition(
   obj: CelestialObject,
-  planets: Planet[]
+  planets: Planet[],
+  liveAngleDeg?: number
 ): { x: number; y: number } {
   if (obj.parentPlanetId) {
+    // Moon branch: always schematic, liveAngleDeg ignored
     const parent = planets.find((p) => p.id === obj.parentPlanetId);
     if (parent) {
       const pRad = (parent.initialAngleDeg * Math.PI) / 180;
@@ -25,7 +29,8 @@ export function getObjectPosition(
       };
     }
   }
-  const rad = (obj.initialAngleDeg * Math.PI) / 180;
+  // Parentless body: live angle overrides schematic, orbitRadius stays schematic
+  const rad = ((liveAngleDeg ?? obj.initialAngleDeg) * Math.PI) / 180;
   return {
     x: obj.orbitRadius * Math.cos(rad),
     y: obj.orbitRadius * Math.sin(rad),
@@ -37,12 +42,16 @@ export default function ObjectNode({
   isSelected,
   onClick,
   planets,
+  liveAngleDeg,
+  isLiveData = false,
 }: ObjectNodeProps) {
-  const { x, y } = getObjectPosition(object, planets);
-  const r = object.nodeRadius;
   const isMoon = object.parentPlanetId !== null;
+  const { x, y } = getObjectPosition(object, planets, liveAngleDeg);
+  const r = object.nodeRadius;
 
-  const labelAngle = (object.initialAngleDeg * Math.PI) / 180;
+  // Label direction tracks live angle for parentless bodies, schematic angle for moons
+  const effectiveAngle = isMoon ? object.initialAngleDeg : (liveAngleDeg ?? object.initialAngleDeg);
+  const labelAngle = (effectiveAngle * Math.PI) / 180;
   const lx = Math.cos(labelAngle) * (r + 7);
   const ly = Math.sin(labelAngle) * (r + 7);
   const anchor =
@@ -87,6 +96,10 @@ export default function ObjectNode({
             filter: isSelected ? 'url(#planet-glow)' : undefined,
           }}
         />
+      )}
+
+      {isLiveData && !isMoon && (
+        <circle cx={r * 0.7} cy={-(r * 0.7)} r={1.5} fill="var(--hud-green)" opacity={0.9} />
       )}
 
       <text

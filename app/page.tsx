@@ -165,6 +165,7 @@ export default function Home() {
     selectedPlanet, selectedObject, selectedSector,
     onSelectPlanet: selectPlanet, onSelectObject: selectObject, onSelectSector: selectSector,
     mode, ephemerisData, ephemerisStatus, onRefreshEphemeris: fetchEphemeris,
+    extendedEphemerisData: extendedEphData,
   };
 
   return (
