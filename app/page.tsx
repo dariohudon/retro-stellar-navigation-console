@@ -11,6 +11,7 @@ import {
   EphemerisResponse,
 } from "@/lib/ephemeris/types";
 import { NeoObject, NeoResponse } from "@/lib/neo/types";
+import { SpacecraftResponse } from "@/lib/spacecraft/types";
 import NavigationConsole from "@/components/NavigationConsole";
 import NeoThreatConsole from "@/components/NeoThreatConsole";
 import SolarSystemMap from "@/components/SolarSystemMap";
@@ -111,13 +112,29 @@ export default function Home() {
     } catch { setExtendedEphStatus('error'); }
   }, []);
 
+  // ── Spacecraft / mission state ────────────────────────────────────────────
+  const [spacecraftData,   setSpacecraftData]   = useState<SpacecraftResponse | null>(null);
+  const [spacecraftStatus, setSpacecraftStatus] = useState<EphemerisStatus>('idle');
+
+  const fetchSpacecraft = useCallback(async (force = false) => {
+    setSpacecraftStatus('loading');
+    try {
+      const res  = await fetch(force ? '/api/spacecraft?force=true' : '/api/spacecraft');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: SpacecraftResponse = await res.json();
+      setSpacecraftData(data);
+      setSpacecraftStatus(data.isLive ? 'live' : 'error');
+    } catch { setSpacecraftStatus('error'); }
+  }, []);
+
   const handleModeToggle = useCallback((newMode: DisplayMode) => {
     setMode(newMode);
     if (newMode === 'live') {
       if (!ephemerisData && ephemerisStatus === 'idle') fetchEphemeris();
       if (!extendedEphData && extendedEphStatus === 'idle') fetchExtendedEphemeris();
+      if (!spacecraftData && spacecraftStatus === 'idle') fetchSpacecraft();
     }
-  }, [ephemerisData, ephemerisStatus, fetchEphemeris, extendedEphData, extendedEphStatus, fetchExtendedEphemeris]);
+  }, [ephemerisData, ephemerisStatus, fetchEphemeris, extendedEphData, extendedEphStatus, fetchExtendedEphemeris, spacecraftData, spacecraftStatus, fetchSpacecraft]);
 
   // ── Map view mode ─────────────────────────────────────────────────────────
   const [mapMode, setMapMode] = useState<MapMode>('2d');
@@ -302,6 +319,8 @@ export default function Home() {
         neoData={neoData}
         extendedEphStatus={extendedEphStatus}
         extendedEphData={extendedEphData}
+        spacecraftStatus={spacecraftStatus}
+        spacecraftData={spacecraftData}
       />
     </div>
   );
@@ -330,6 +349,8 @@ interface DataSourceFooterProps {
   neoData:           NeoResponse | null;
   extendedEphStatus: EphemerisStatus;
   extendedEphData:   EphemerisResponse | null;
+  spacecraftStatus:  EphemerisStatus;
+  spacecraftData:    SpacecraftResponse | null;
 }
 
 function SourceChip({ label, value, color, detail }: {
@@ -363,6 +384,8 @@ function DataSourceFooter({
   neoData,
   extendedEphStatus,
   extendedEphData,
+  spacecraftStatus,
+  spacecraftData,
 }: DataSourceFooterProps) {
   // ── Ephemeris chip ────────────────────────────────────────────────────────
   let ephText  = 'STATIC LAYOUT';
@@ -459,6 +482,37 @@ function DataSourceFooter({
     }
   }
 
+  // ── MISSIONS chip (only shown once spacecraft fetch starts) ───────────────
+  const showMissions = spacecraftStatus !== 'idle';
+  let missText   = 'JPL HORIZONS';
+  let missColor  = 'var(--hud-green-faint)';
+  let missDetail: string | undefined;
+
+  if (spacecraftStatus === 'loading') {
+    missText  = 'JPL HORIZONS — FETCHING';
+    missColor = 'var(--hud-green-dim)';
+  } else if (spacecraftStatus === 'error') {
+    missText  = 'JPL HORIZONS — FALLBACK';
+    missColor = 'var(--hud-warning)';
+  } else if (spacecraftData) {
+    const liveCount = Object.values(spacecraftData.assets).filter(a => a.isLive).length;
+    const time = fmtUtcTime(spacecraftData.timestamp);
+    if (spacecraftData.isLive) {
+      if (spacecraftData.fromCache) {
+        missText   = 'NASA/JPL HORIZONS';
+        missColor  = 'var(--hud-warning)';
+        missDetail = `CACHE ${fmtAge(spacecraftData.cacheAgeSeconds)} AGO // ${liveCount} ASSETS`;
+      } else {
+        missText   = 'NASA/JPL HORIZONS';
+        missColor  = 'var(--hud-green)';
+        missDetail = `LIVE // ${liveCount} ASSETS // ${time}`;
+      }
+    } else {
+      missText  = 'JPL HORIZONS — STATIC FALLBACK';
+      missColor = 'var(--hud-warning)';
+    }
+  }
+
   return (
     <footer style={{
       flexShrink: 0,
@@ -502,6 +556,14 @@ function DataSourceFooter({
             value={extText}
             color={extColor}
             detail={extDetail}
+          />
+        )}
+        {showMissions && (
+          <SourceChip
+            label="MISSIONS"
+            value={missText}
+            color={missColor}
+            detail={missDetail}
           />
         )}
       </div>
