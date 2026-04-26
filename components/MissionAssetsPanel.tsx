@@ -3,9 +3,11 @@ import { EphemerisStatus } from '@/lib/ephemeris/types';
 import HudPanel from './HudPanel';
 
 interface MissionAssetsPanelProps {
-  spacecraftData:   SpacecraftResponse | null;
-  spacecraftStatus: EphemerisStatus;
-  onRefresh:        (force?: boolean) => void;
+  spacecraftData:      SpacecraftResponse | null;
+  spacecraftStatus:    EphemerisStatus;
+  onRefresh:           (force?: boolean) => void;
+  selectedSpacecraft:  SpacecraftPosition | null;
+  onSelectSpacecraft:  (sc: SpacecraftPosition | null) => void;
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -27,25 +29,42 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function AssetCard({
   asset,
   fromCache,
+  isSelected,
+  onSelect,
 }: {
-  asset: SpacecraftPosition;
-  fromCache: boolean;
+  asset:      SpacecraftPosition;
+  fromCache:  boolean;
+  isSelected: boolean;
+  onSelect:   () => void;
 }) {
-  const borderColor = asset.isLive
-    ? (fromCache ? 'var(--hud-warning)' : 'var(--hud-green)')
-    : 'var(--hud-border)';
+  const borderColor = isSelected
+    ? 'var(--hud-green)'
+    : asset.isLive
+      ? (fromCache ? 'var(--hud-warning)' : 'var(--hud-green)')
+      : 'var(--hud-border)';
 
+  const nameColor  = isSelected ? 'var(--hud-green)' : asset.isLive ? 'var(--hud-green-mid)' : 'var(--hud-green-dim)';
+  const distColor  = isSelected ? 'var(--hud-green)' : asset.isLive ? 'var(--hud-amber)' : 'var(--hud-green-faint)';
   const statusColor = asset.missionStatus === 'active'
     ? (asset.isLive ? 'var(--hud-green)' : 'var(--hud-green-dim)')
     : 'var(--hud-green-faint)';
 
   return (
-    <div style={{
-      borderLeft: `3px solid ${borderColor}`,
-      borderBottom: '1px solid rgba(255,255,255,0.03)',
-      padding: '5px 7px',
-      marginBottom: '2px',
-    }}>
+    <button
+      onClick={onSelect}
+      style={{
+        display: 'block',
+        width: '100%',
+        textAlign: 'left',
+        background: isSelected ? 'rgba(0,255,136,0.07)' : 'transparent',
+        border: 'none',
+        borderLeft: `3px solid ${borderColor}`,
+        borderBottom: '1px solid rgba(255,255,255,0.03)',
+        padding: '5px 7px',
+        cursor: 'pointer',
+        marginBottom: '2px',
+      }}
+    >
       {/* Name + distance */}
       <div style={{
         display: 'flex',
@@ -54,17 +73,12 @@ function AssetCard({
         fontFamily: "'Courier New', monospace",
         fontSize: '15px',
         letterSpacing: '0.04em',
-        color: asset.isLive ? 'var(--hud-green-mid)' : 'var(--hud-green-dim)',
+        color: nameColor,
         textTransform: 'uppercase',
         lineHeight: 1.5,
       }}>
         <span>{asset.name}</span>
-        <span style={{
-          fontSize: '13px',
-          color: asset.isLive ? 'var(--hud-amber)' : 'var(--hud-green-faint)',
-          flexShrink: 0,
-          marginLeft: '6px',
-        }}>
+        <span style={{ fontSize: '13px', color: distColor, flexShrink: 0, marginLeft: '6px' }}>
           {asset.isLive ? `${asset.distanceAU.toFixed(2)} AU` : '— AU'}
         </span>
       </div>
@@ -100,7 +114,7 @@ function AssetCard({
           {asset.note}
         </div>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -108,6 +122,8 @@ export default function MissionAssetsPanel({
   spacecraftData,
   spacecraftStatus,
   onRefresh,
+  selectedSpacecraft,
+  onSelectSpacecraft,
 }: MissionAssetsPanelProps) {
   // Sort by distanceAU descending when live (Voyager 1 first); preserve order otherwise
   const assets: SpacecraftPosition[] = spacecraftData
@@ -153,6 +169,10 @@ export default function MissionAssetsPanel({
                   key={asset.id}
                   asset={asset}
                   fromCache={spacecraftData?.fromCache ?? false}
+                  isSelected={selectedSpacecraft?.id === asset.id}
+                  onSelect={() => onSelectSpacecraft(
+                    selectedSpacecraft?.id === asset.id ? null : asset
+                  )}
                 />
               ))}
             </div>

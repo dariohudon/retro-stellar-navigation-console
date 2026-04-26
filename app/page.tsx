@@ -11,7 +11,7 @@ import {
   EphemerisResponse,
 } from "@/lib/ephemeris/types";
 import { NeoObject, NeoResponse } from "@/lib/neo/types";
-import { SpacecraftResponse } from "@/lib/spacecraft/types";
+import { SpacecraftResponse, SpacecraftPosition } from "@/lib/spacecraft/types";
 import NavigationConsole from "@/components/NavigationConsole";
 import NeoThreatConsole from "@/components/NeoThreatConsole";
 import SolarSystemMap from "@/components/SolarSystemMap";
@@ -66,22 +66,26 @@ function modeBtn(active: boolean, isGreen = false): React.CSSProperties {
 
 export default function Home() {
   // ── Planet/object/sector selection ───────────────────────────────────────
-  const [selectedPlanet,  setSelectedPlanet]  = useState<Planet | null>(null);
-  const [selectedObject,  setSelectedObject]  = useState<CelestialObject | null>(null);
-  const [selectedSector,  setSelectedSector]  = useState<Sector | null>(null);
-  const [selectedNeo,     setSelectedNeo]     = useState<NeoObject | null>(null);
+  const [selectedPlanet,     setSelectedPlanet]     = useState<Planet | null>(null);
+  const [selectedObject,     setSelectedObject]     = useState<CelestialObject | null>(null);
+  const [selectedSector,     setSelectedSector]     = useState<Sector | null>(null);
+  const [selectedNeo,        setSelectedNeo]        = useState<NeoObject | null>(null);
+  const [selectedSpacecraft, setSelectedSpacecraft] = useState<SpacecraftPosition | null>(null);
 
   const selectPlanet = (p: Planet) => {
-    setSelectedPlanet(p); setSelectedObject(null); setSelectedSector(null); setSelectedNeo(null);
+    setSelectedPlanet(p); setSelectedObject(null); setSelectedSector(null); setSelectedNeo(null); setSelectedSpacecraft(null);
   };
   const selectObject = (o: CelestialObject) => {
-    setSelectedObject(o); setSelectedPlanet(null); setSelectedSector(null); setSelectedNeo(null);
+    setSelectedObject(o); setSelectedPlanet(null); setSelectedSector(null); setSelectedNeo(null); setSelectedSpacecraft(null);
   };
   const selectSector = (s: Sector) => {
-    setSelectedSector(s); setSelectedPlanet(null); setSelectedObject(null); setSelectedNeo(null);
+    setSelectedSector(s); setSelectedPlanet(null); setSelectedObject(null); setSelectedNeo(null); setSelectedSpacecraft(null);
   };
   const selectNeo = (neo: NeoObject | null) => {
-    setSelectedNeo(neo); setSelectedPlanet(null); setSelectedObject(null); setSelectedSector(null);
+    setSelectedNeo(neo); setSelectedPlanet(null); setSelectedObject(null); setSelectedSector(null); setSelectedSpacecraft(null);
+  };
+  const selectSpacecraft = (sc: SpacecraftPosition | null) => {
+    setSelectedSpacecraft(sc); setSelectedPlanet(null); setSelectedObject(null); setSelectedSector(null); setSelectedNeo(null);
   };
 
   // ── Ephemeris mode ────────────────────────────────────────────────────────
@@ -178,7 +182,7 @@ export default function Home() {
 
   // ── Derived values ────────────────────────────────────────────────────────
   const totalBodies  = PLANETS.length + CELESTIAL_OBJECTS.length;
-  const activeTarget = selectedNeo?.name
+  const activeTarget = selectedNeo?.name ?? selectedSpacecraft?.name
     ?? selectedPlanet?.name ?? selectedObject?.name ?? selectedSector?.name ?? null;
 
   const neoObjects = neoData?.objects ?? [];
@@ -298,6 +302,8 @@ export default function Home() {
             spacecraftData={spacecraftData}
             spacecraftStatus={spacecraftStatus}
             onRefresh={fetchSpacecraft}
+            selectedSpacecraft={selectedSpacecraft}
+            onSelectSpacecraft={selectSpacecraft}
           />
         )}
 
@@ -309,6 +315,8 @@ export default function Home() {
             selectedNeo={selectedNeo}
             onSelectNeo={selectNeo}
             spacecraftData={spacecraftData}
+            selectedSpacecraft={selectedSpacecraft}
+            onSelectSpacecraft={selectSpacecraft}
           />
         ) : (
           <OrbitalMap3D {...mapProps} />
@@ -320,6 +328,7 @@ export default function Home() {
           selectedSector={selectedSector} mode={mode} ephemerisData={ephemerisData}
           selectedNeo={selectedNeo}
           extendedEphemerisData={extendedEphData}
+          selectedSpacecraft={selectedSpacecraft}
         />
       </main>
 

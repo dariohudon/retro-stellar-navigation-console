@@ -3,16 +3,18 @@ import { CelestialObject } from "@/data/celestialObjects";
 import { Sector, SECTORS } from "@/data/sectors";
 import { EphemerisResponse, DisplayMode } from "@/lib/ephemeris/types";
 import { NeoObject, getNeoStatus, getNeoStatusColor, getNeoStatusLabel } from "@/lib/neo/types";
+import { SpacecraftPosition } from "@/lib/spacecraft/types";
 import HudPanel from "./HudPanel";
 
 interface PlanetInfoPanelProps {
-  selectedPlanet: Planet | null;
-  selectedObject: CelestialObject | null;
-  selectedSector: Sector | null;
-  mode: DisplayMode;
-  ephemerisData: EphemerisResponse | null;
-  selectedNeo: NeoObject | null;
+  selectedPlanet:       Planet | null;
+  selectedObject:       CelestialObject | null;
+  selectedSector:       Sector | null;
+  mode:                 DisplayMode;
+  ephemerisData:        EphemerisResponse | null;
+  selectedNeo:          NeoObject | null;
   extendedEphemerisData: EphemerisResponse | null;
+  selectedSpacecraft:   SpacecraftPosition | null;
 }
 
 // ── Shared primitives ─────────────────────────────────────────────────────────
@@ -413,6 +415,85 @@ function NeoView({ neo }: { neo: NeoObject }) {
   );
 }
 
+// ── Spacecraft / mission asset view ──────────────────────────────────────────
+function SpacecraftView({ asset, mode }: { asset: SpacecraftPosition; mode: DisplayMode }) {
+  const dataIsLive = asset.isLive;
+  const dataMode =
+    dataIsLive                ? 'LIVE'     :
+    mode === 'schematic'      ? 'SCHEMATIC' : 'FALLBACK';
+  const dataModeColor =
+    dataMode === 'LIVE'       ? 'var(--hud-green)'     :
+    dataMode === 'FALLBACK'   ? 'var(--hud-warning)'   :
+                                'var(--hud-green-faint)';
+
+  return (
+    <div>
+      <Lbl mt="0">MISSION ASSET:</Lbl>
+      <BigName>{asset.name}</BigName>
+
+      <Row label="CLASSIFICATION" value={asset.category.replace('-', ' ').toUpperCase()} />
+      <Row label="AGENCY"         value={asset.agency} />
+      <Row label="LAUNCHED"       value={String(asset.launchYear)} />
+      <Row label="STATUS"         value={asset.missionStatus.toUpperCase()} />
+
+      {/* Data mode badge */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        fontSize: '12px', letterSpacing: '0.1em', padding: '5px 0', marginBottom: '2px',
+      }}>
+        <span style={{ color: 'var(--hud-green-faint)' }}>DATA MODE</span>
+        <span style={{ color: dataModeColor }}>{dataMode}</span>
+      </div>
+
+      <hr className="hud-separator" />
+      <Lbl>LIVE BEARING:</Lbl>
+
+      {dataIsLive ? (
+        <>
+          <Row label="BEARING"       value={`${asset.angleDeg.toFixed(2)}°`} bright />
+          <Row label="DISTANCE AU"   value={asset.distanceAU.toFixed(2)} bright />
+        </>
+      ) : (
+        <div style={{ fontSize: '11px', color: 'var(--hud-warning)', letterSpacing: '0.08em', lineHeight: 1.7 }}>
+          {asset.error ? `JPL ERR: ${asset.error.slice(0, 45)}` : 'LIVE POSITION UNAVAILABLE'}
+        </div>
+      )}
+
+      {dataIsLive && (
+        <>
+          <hr className="hud-separator" />
+          <Lbl>POSITION (AU):</Lbl>
+          <Row label="X  ECL J2000" value={asset.x.toFixed(4)} bright />
+          <Row label="Y  ECL J2000" value={asset.y.toFixed(4)} bright />
+          <Row label="Z  ECL J2000" value={asset.z.toFixed(5)} />
+          <Row label="EPOCH UTC"    value={new Date(asset.timestamp).toUTCString().slice(5, 22)} />
+          {asset.refFrame && (
+            <div style={{ fontSize: '10px', color: 'var(--hud-green-faint)', letterSpacing: '0.07em', marginTop: '2px' }}>
+              REF: {asset.refFrame.replace('_', ' ')} — JPL HORIZONS
+            </div>
+          )}
+        </>
+      )}
+
+      {asset.note && (
+        <>
+          <hr className="hud-separator" />
+          <Lbl>MISSION NOTE:</Lbl>
+          <FieldIntel text={asset.note} />
+        </>
+      )}
+
+      <hr className="hud-separator" />
+      <div style={{ fontSize: '10px', color: 'var(--hud-green-faint)', letterSpacing: '0.07em', lineHeight: 1.8, marginBottom: '4px' }}>
+        <div>MAP: BEARING LIVE — RANGE SCHEMATIC</div>
+        <div>NOT TO SCALE — JPL HORIZONS</div>
+      </div>
+
+      <NavLockBadge />
+    </div>
+  );
+}
+
 // ── Main panel ────────────────────────────────────────────────────────────────
 export default function PlanetInfoPanel({
   selectedPlanet,
@@ -422,12 +503,15 @@ export default function PlanetInfoPanel({
   ephemerisData,
   selectedNeo,
   extendedEphemerisData,
+  selectedSpacecraft,
 }: PlanetInfoPanelProps) {
   return (
     <div style={{ width: "270px", flexShrink: 0, display: "flex", flexDirection: "column" }}>
       <HudPanel title="TARGET DATA">
         {selectedNeo ? (
           <NeoView neo={selectedNeo} />
+        ) : selectedSpacecraft ? (
+          <SpacecraftView asset={selectedSpacecraft} mode={mode} />
         ) : selectedPlanet ? (
           <PlanetView planet={selectedPlanet} mode={mode} ephemerisData={ephemerisData} />
         ) : selectedObject ? (
