@@ -4,17 +4,7 @@ A self-hosted mission-control style solar system dashboard built with Next.js, R
 
 This is not a traditional astronomy viewer.
 
-It is a cinematic **Space Command Centre** — built for tactical navigation, live planetary positioning, Near-Earth Object tracking, sector mapping, and retro HUD visualization.
-
-The goal is:
-
-**NASA + sci-fi cinema + tactical systems design**
-
-—not—
-
-generic astronomy dashboard software
-
-Retro Stellar is designed to feel like a real navigation console: part observatory, part mission control, part orbital intelligence system.
+It is a cinematic **Space Command Centre** — built for tactical navigation, live planetary positioning, Near-Earth Object tracking, sector mapping, and retro HUD visualization. Retro Stellar is designed to feel like a real navigation console: part observatory, part mission control, part orbital intelligence system.
 
 ---
 
@@ -75,16 +65,7 @@ Retro Stellar is designed to feel like a real navigation console: part observato
 
 **Endpoint:** `/api/ephemeris`
 
-Provides live positioning for the 8 major planets:
-
-- Mercury
-- Venus
-- Earth
-- Mars
-- Jupiter
-- Saturn
-- Uranus
-- Neptune
+Provides live positioning for the 8 major planets.
 
 Data includes:
 
@@ -151,19 +132,8 @@ All vectors remain labeled:
 
 Provides live JPL Horizons positioning for:
 
-### Dwarf Planets
-
-- Pluto
-- Ceres
-
-### Major Moons
-
-- Io
-- Europa
-- Ganymede
-- Callisto
-- Titan
-- Triton
+- Dwarf Planets
+- Major Moons
 
 ### Parentless Bodies
 
