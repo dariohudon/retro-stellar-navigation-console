@@ -11,6 +11,7 @@ import ObjectNode from "./ObjectNode";
 import SectorBand from "./SectorBand";
 import NeoMarker from "./NeoMarker";
 import SpacecraftIndicators from "./SpacecraftIndicators";
+import TacticalGridOverlay from "./TacticalGridOverlay";
 import { NeoObject } from "@/lib/neo/types";
 import { SpacecraftResponse, SpacecraftPosition } from "@/lib/spacecraft/types";
 
@@ -79,6 +80,7 @@ export default function SolarSystemMap({
   const [zoom, setZoom] = useState(0.86);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
   const dragOrigin = useRef({ mx: 0, my: 0, px: 0, py: 0 });
 
   const toSvgDelta = useCallback((clientDx: number, clientDy: number) => {
@@ -259,6 +261,13 @@ export default function SolarSystemMap({
               REFRESH
             </button>
           )}
+          <button
+            onClick={() => setShowGrid(g => !g)}
+            style={hudBtn(false, showGrid)}
+            title="Toggle bearing grid"
+          >
+            GRID
+          </button>
           <button onClick={resetView} style={hudBtn()} title="Reset view (0)">RESET</button>
         </div>
       </div>
@@ -292,8 +301,11 @@ export default function SolarSystemMap({
 
         <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
 
-          {/* Grid */}
+          {/* Cartesian dot-grid background */}
           <rect x={-6000} y={-6000} width={12000} height={12000} fill="url(#grid)" />
+
+          {/* Tactical bearing grid — rendered beneath sector bands */}
+          {showGrid && <TacticalGridOverlay />}
 
           {/* Sector bands */}
           {sectors.map(s => (
@@ -458,11 +470,11 @@ export default function SolarSystemMap({
 }
 
 // Status-bar text button (REFRESH / RESET)
-function hudBtn(disabled = false): React.CSSProperties {
+function hudBtn(disabled = false, active = false): React.CSSProperties {
   return {
-    background: 'transparent',
-    border: '1px solid var(--hud-border)',
-    color: disabled ? 'var(--hud-green-faint)' : 'var(--hud-green-dim)',
+    background: active ? 'rgba(0,255,136,0.07)' : 'transparent',
+    border: `1px solid ${active ? 'var(--hud-green)' : 'var(--hud-border)'}`,
+    color: disabled ? 'var(--hud-green-faint)' : active ? 'var(--hud-green)' : 'var(--hud-green-dim)',
     fontFamily: "'Courier New', monospace",
     fontSize: '13px',
     letterSpacing: '0.08em',
