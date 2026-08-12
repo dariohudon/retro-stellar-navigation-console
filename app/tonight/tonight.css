@@ -78,8 +78,11 @@
   .obs-stack.has-open {
     display: flex; flex-direction: column;
     flex: 1; min-height: 0;
+    /* Safari shrink-wraps auto-margin flex items — force the full width */
+    width: 100%; max-width: none; margin: 0; align-self: stretch;
     padding-bottom: 74px; /* clear the bottom pile */
   }
+  .obs-card.open { width: 100%; }
   .obs-card.open { min-height: 0; }
   /* wallet mode: the open card owns the screen; the rest leave entirely */
   .obs-stack.has-open .obs-card:not(.open) { display: none; }
