@@ -3,7 +3,10 @@
   --hud-green-mid: #F2F2F2;
   --hud-green-dim: #C8C8C8;
   --hud-green-faint: #969696;
-  min-height: 100vh;
+  /* the HUD locks body scroll globally — the observatory scrolls itself */
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--hud-bg);
   color: var(--hud-green-mid);
   font-family: 'Courier New', Courier, monospace;
@@ -271,8 +274,8 @@
 .obs-pull-spin { color: var(--hud-green); animation: obs-pulse 0.9s ease infinite; }
 @keyframes obs-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 .obs-section {
-  font-size: 9px; letter-spacing: 3px; color: var(--hud-green-faint);
-  padding: 18px 6px 8px; position: relative; z-index: 2;
+  font-size: 13px; font-weight: 700; letter-spacing: 3px; color: var(--hud-green-dim);
+  padding: 20px 6px 10px; position: relative; z-index: 2;
 }
 .obs-section + .obs-card { margin-top: 0 !important; }
 .obs-stack .obs-card + .obs-section { margin-top: 6px; }
