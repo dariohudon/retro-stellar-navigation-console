@@ -169,7 +169,7 @@
 .obs-empty { color: var(--hud-green-faint); padding: 8px 0; font-size: 13px; }
 
 /* ── ISS sky path ── */
-.obs-skypath { width: 100%; max-width: 300px; margin: 4px auto; display: block; }
+.obs-skypath { width: 100%; max-width: none; margin: 4px auto; display: block; }
 .obs-skypath .sp-card { fill: var(--hud-green-faint); font-size: 12px; font-family: inherit; letter-spacing: 1px; }
 .obs-skypath .sp-lbl { fill: var(--hud-green-mid); font-size: 10px; font-family: inherit; letter-spacing: 0.5px; }
 .obs-skypath .sp-peak { fill: var(--hud-amber); }
@@ -272,7 +272,7 @@
 .obs-kpchart .kp-go { fill: var(--hud-green); }
 .obs-kpchart .kp-close { fill: var(--hud-warning); opacity: 0.85; }
 .obs-kpchart .kp-quiet { fill: var(--hud-green-faint); opacity: 0.4; }
-.obs-ladder { max-width: 280px; }
+
 .obs-pull {
   display: flex; align-items: center; justify-content: center;
   font-size: 10px; letter-spacing: 2px; color: var(--hud-green-dim);
@@ -462,3 +462,6 @@ body:has(.obs-root.retro)::after { display: none; }
 .obs-root.retro .obs-dot.amber { box-shadow: 0 0 8px rgba(201, 155, 63, 0.75); }
 .obs-root.retro .obs-dot.red { box-shadow: 0 0 8px rgba(190, 107, 84, 0.75); }
 .obs-root.retro .obs-cloudwarn.solar-summary { color: var(--hud-green-mid); }
+
+/* retro: chart scaffolding needs real ink on paper */
+.obs-root.retro .obs-skypath { --hud-border: #B4BDB2; }

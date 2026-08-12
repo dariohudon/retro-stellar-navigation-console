@@ -237,14 +237,20 @@ const BORTLE_COLORS: Record<number, string> = {
   0: 'transparent', 1: '#0b7a3c', 2: '#0f9c4a', 3: '#27c060', 4: '#00FF88',
   5: '#ffc857', 6: '#ff9354', 7: '#ff6b4a', 8: '#ff4a4a', 9: '#ff8f8f',
 };
+// softer palette-matched tones for the light RETRO mode
+const BORTLE_COLORS_RETRO: Record<number, string> = {
+  0: 'transparent', 1: '#4F7168', 2: '#5F8378', 3: '#71968A', 4: '#8CACA4',
+  5: '#E8BE5D', 6: '#D9A662', 7: '#D28E7C', 8: '#B27B64', 9: '#9E6B55',
+};
 
-function BortleScale({ bortle }: { bortle: number }) {
+function BortleScale({ bortle, retro }: { bortle: number; retro?: boolean }) {
+  const C9 = retro ? BORTLE_COLORS_RETRO : BORTLE_COLORS;
   const W = 260, H = 56, bw = W / 9;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="obs-skypath obs-bortlescale" aria-label="Bortle scale">
       {Array.from({ length: 9 }, (_, i) => (
         <g key={i}>
-          <rect x={i * bw + 2} y={18} width={bw - 4} height={16} fill={BORTLE_COLORS[i + 1]} opacity={i + 1 === bortle ? 1 : 0.32} />
+          <rect x={i * bw + 2} y={18} width={bw - 4} height={16} fill={C9[i + 1]} opacity={i + 1 === bortle ? 1 : retro ? 0.45 : 0.32} />
           <text x={i * bw + bw / 2} y={48} textAnchor="middle" className="sp-lbl">{i + 1}</text>
         </g>
       ))}
@@ -253,7 +259,8 @@ function BortleScale({ bortle }: { bortle: number }) {
   );
 }
 
-function EscapeMap({ lp }: { lp: LightPollutionData }) {
+function EscapeMap({ lp, retro }: { lp: LightPollutionData; retro?: boolean }) {
+  const C9 = retro ? BORTLE_COLORS_RETRO : BORTLE_COLORS;
   const C = 130, R = 118;
   const ringR = (i: number) => ((i + 1) / lp.rings.length) * (R - 16) + 16;
   const wedge = (dir: number, ring: number) => {
@@ -268,10 +275,10 @@ function EscapeMap({ lp }: { lp: LightPollutionData }) {
     <svg viewBox="0 0 260 260" className="obs-skypath" aria-label="Dark sky directions">
       {lp.cells.map(c => (
         <path key={`${c.dirIndex}-${c.ringIndex}`} d={wedge(c.dirIndex, c.ringIndex)}
-          fill={BORTLE_COLORS[c.bortle] ?? 'transparent'} opacity={c.bortle === 0 ? 0 : c.bortle <= 4 ? 0.8 : 0.45}
+          fill={C9[c.bortle] ?? 'transparent'} opacity={c.bortle === 0 ? 0 : c.bortle <= 4 ? 0.85 : retro ? 0.6 : 0.45}
           stroke="var(--hud-bg)" strokeWidth="0.5" />
       ))}
-      <circle cx={C} cy={C} r={13} fill="var(--hud-bg)" stroke={BORTLE_COLORS[lp.bortle]} strokeWidth="1.5" />
+      <circle cx={C} cy={C} r={13} fill="var(--hud-bg)" stroke={C9[lp.bortle]} strokeWidth="1.5" />
       <text x={C} y={C + 4} textAnchor="middle" className="sp-lbl sp-peak">{lp.bortle}</text>
       <text x={C} y={10} textAnchor="middle" className="sp-card">N</text>
       <text x={254} y={C + 4} textAnchor="middle" className="sp-card">E</text>
@@ -679,8 +686,11 @@ export default function TonightPage() {
     </div>
   );
 
+  const effTheme = theme === 'auto' ? (tonight?.isNight ? 'night' : 'day') : theme;
+  const isRetro = effTheme === 'retro';
+
   return (
-    <div className={(() => { const eff = theme === 'auto' ? (tonight?.isNight ? 'night' : 'day') : theme; return `obs-root${eff !== 'day' ? ` ${eff}` : ''}`; })()}>
+    <div className={`obs-root${effTheme !== 'day' ? ` ${effTheme}` : ''}`}>
       {splash && (
         <div className="obs-splash">
           <svg viewBox="0 0 160 160" className="obs-splash-logo" aria-hidden="true">
@@ -941,7 +951,7 @@ export default function TonightPage() {
               lightView === 1 ? (
                 <>
                   <div className="obs-row"><span className="k">DARK SKY FINDER</span><span className="v">RINGS AT {light.rings.join(' / ')} KM</span></div>
-                  <EscapeMap lp={light} />
+                  <EscapeMap lp={light} retro={isRetro} />
                   {light.nearestDark
                     ? <div className="obs-row"><span className="k">NEAREST DARK SKY</span><span className="v hot">BORTLE {light.nearestDark.bortle} · {light.nearestDark.km} KM {light.nearestDark.dir}</span></div>
                     : <div className="obs-row"><span className="k">NEAREST DARK SKY</span><span className="v">{light.bortle <= 4 ? 'YOU ARE IN ONE' : 'NONE WITHIN 150 KM'}</span></div>}
@@ -949,7 +959,7 @@ export default function TonightPage() {
                 </>
               ) : (
                 <>
-                  <BortleScale bortle={light.bortle} />
+                  <BortleScale bortle={light.bortle} retro={isRetro} />
                   <div className="obs-row"><span className="k">CLASS {light.bortle}</span><span className="v">{light.label}</span></div>
                   <div className="obs-row"><span className="k">SKY BRIGHTNESS</span><span className="v">SQM {light.sqm.toFixed(2)} MAG/ARCSEC²</span></div>
                   <div className="obs-row"><span className="k">VS NATURAL SKY</span><span className="v">{light.ratio < 1 ? `${Math.round(light.ratio * 100)}% BRIGHTER` : `${(light.ratio + 1).toFixed(1)}× BRIGHTER`}</span></div>
