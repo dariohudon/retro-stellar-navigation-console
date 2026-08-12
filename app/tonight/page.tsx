@@ -647,7 +647,7 @@ export default function TonightPage() {
           </div>
           <div className="obs-card-body" {...craftPager.swipe}>
             {craft ? (
-              craftView === 1 ? (
+              craftView === 0 ? (
                 <>
                   <div className="obs-row"><span className="k">DISTANCE LADDER</span><span className="v">LOG SCALE FROM SUN</span></div>
                   <DistanceLadder craft={craft} />
