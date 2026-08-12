@@ -425,12 +425,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .obs-card, .obs-card.open .obs-card-body, .obs-hints, .obs-splash-logo * { animation: none !important; }
+  /* suppress spatial motion (slides/scales); the splash line-drawing is
+     gentle opacity/stroke work and stays — it's the app's signature moment */
+  .obs-card, .obs-card.open .obs-card-body, .obs-hints { animation: none !important; }
   .obs-drawer { transition: none; }
-  /* land on end states so the logo still appears */
-  .obs-splash-logo .sl-draw { stroke-dashoffset: 0; }
-  .obs-splash-logo .sl-tick, .obs-splash-logo .sl-sat { opacity: 1; }
-  .obs-splash { animation: none !important; opacity: 1; }
 }
 
 /* ── RETRO mode: seventies mission panel — cream, teal, mustard, terracotta ── */
