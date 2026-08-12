@@ -164,6 +164,13 @@ export default function TonightPage() {
 
   const openCls = (id: string) => `obs-card${open === id || isDesktop ? ' open' : ''}`;
 
+  const issDots = (
+    <div className="obs-dots">
+      <i className={issView === 'list' ? 'on' : ''} onClick={e => { e.stopPropagation(); setIssView('list'); }} />
+      <i className={issView === 'path' ? 'on' : ''} onClick={e => { e.stopPropagation(); setIssView('path'); }} />
+    </div>
+  );
+
   return (
     <div className={`obs-root${theme !== 'day' ? ` ${theme}` : ''}`}>
       {splash && (
@@ -307,14 +314,14 @@ export default function TonightPage() {
                         <span className="v">{p.startDir}→{p.endDir} · max {p.maxElevation}° · {p.durationMin} min</span>
                       </div>
                     ))}
-                    <div className="obs-swipe-hint" onClick={() => setIssView('path')}>SKY PATH ▸</div>
                     <span className="obs-tag">CELESTRAK TLE · COMPUTED LOCAL</span>
+                    {issDots}
                   </>
                 ) : (
                   <>
                     <div className="obs-row"><span className="k">PASS</span><span className="v">{passes.passes[issPass].start} · {passes.passes[issPass].durationMin} MIN</span></div>
                     <SkyPath pass={passes.passes[issPass]} />
-                    <div className="obs-swipe-hint" onClick={() => setIssView('list')}>◂ ALL PASSES</div>
+                    {issDots}
                   </>
                 )
               ) : <div className="obs-empty">NO PASSES ABOVE 10° IN NEXT 48H</div>

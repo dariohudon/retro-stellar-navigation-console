@@ -40,7 +40,8 @@
 }
 .obs-header {
   display: flex; justify-content: space-between; align-items: baseline;
-  padding: 14px 18px 10px; border-bottom: 1px solid var(--hud-border);
+  padding: calc(14px + env(safe-area-inset-top)) 18px 10px;
+  border-bottom: 1px solid var(--hud-border);
 }
 .obs-header h1 { font-size: 15px; letter-spacing: 2px; color: var(--hud-amber); margin: 0; white-space: nowrap; }
 @media (max-width: 899px) {
@@ -153,10 +154,13 @@
 .obs-skypath .sp-card { fill: var(--hud-green-faint); font-size: 11px; font-family: inherit; letter-spacing: 1px; }
 .obs-skypath .sp-lbl { fill: var(--hud-green-mid); font-size: 9px; font-family: inherit; letter-spacing: 0.5px; }
 .obs-skypath .sp-peak { fill: var(--hud-amber); }
-.obs-swipe-hint {
-  text-align: center; font-size: 10px; letter-spacing: 2px;
-  color: var(--hud-green-dim); padding: 8px 0 2px; cursor: pointer;
+.obs-dots { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 14px 0 4px; }
+.obs-dots i {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 1.5px solid var(--hud-green-dim); cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
 }
+.obs-dots i.on { background: var(--hud-green); border-color: var(--hud-green); }
 .obs-pass.sel .k, .obs-pass.sel .v { color: var(--hud-green); }
 .obs-pass { cursor: pointer; }
 
