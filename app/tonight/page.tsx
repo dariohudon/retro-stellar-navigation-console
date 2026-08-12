@@ -83,6 +83,9 @@ function SkyDome({ planets, moon }: {
       <text x={252} y={C + 4} textAnchor="middle" className="sp-card">E</text>
       <text x={C} y={256} textAnchor="middle" className="sp-card">S</text>
       <text x={8} y={C + 4} textAnchor="middle" className="sp-card">W</text>
+      <text x={C - R * 0.6} y={C + R * 0.78} textAnchor="middle" transform={`rotate(38 ${C - R * 0.6} ${C + R * 0.78})`} className="sp-lbl sp-faint">— HORIZON —</text>
+      <circle cx={C} cy={C} r="1.5" fill="var(--hud-green-faint)" />
+      <text x={C} y={C - 6} textAnchor="middle" className="sp-lbl sp-faint">OVERHEAD</text>
       {moonUp && (() => { const m = project(moon.azimuth, moon.altitude); return (
         <g>
           <circle cx={m.x} cy={m.y} r="5" fill="none" stroke="var(--hud-green)" strokeWidth="1.5" />
@@ -667,7 +670,7 @@ export default function TonightPage() {
             {targets ? (
               tgtView === 1 ? (
                 <>
-                  <div className="obs-row"><span className="k">TARGET DOME</span><span className="v">POSITIONS AT BEST TIME</span></div>
+                  <div className="obs-row"><span className="k">YOUR SKY, LOOKING UP</span><span className="v">EDGE = HORIZON · CENTRE = OVERHEAD</span></div>
                   <SkyDome
                     planets={targets.picks.slice(0, 8).map(p => ({ name: p.id, visible: true, altitude: p.altitude, azimuth: p.azimuth, azimuthCompass: p.azCompass, rise: null, set: null, magnitude: p.mag }))}
                     moon={{ illumination: targets.moonIllumination, phaseName: '', rise: null, set: null, altitude: -90, azimuth: 0 }}
@@ -676,16 +679,22 @@ export default function TonightPage() {
                 </>
               ) : (
                 <>
-                  <div className="obs-row"><span className="k">WINDOW {targets.windowStart}–{targets.windowEnd}</span><span className="v">MOON {targets.moonIllumination}%{targets.bortle ? ` · BORTLE ${targets.bortle}` : ''}</span></div>
-                  {targets.picks.map(p => (
-                    <div className="obs-row" key={p.id}>
-                      <span className="k">{p.id}</span>
-                      <span className={`v ${p.visibleHere ? '' : 'faded'}`}>
-                        {p.name} · {p.azCompass} {p.altitude}° @ {p.bestTime}{p.visibleHere ? '' : ' · NEEDS DARK SITE'}{p.moonWarning ? ' ☾' : ''}
-                      </span>
-                    </div>
-                  ))}
-                  <span className="obs-tag">☾ = MOONLIGHT INTERFERES</span>
+                  <div className="obs-row"><span className="k">DARK {targets.windowStart}–{targets.windowEnd}</span><span className="v">MOON {targets.moonIllumination}%{targets.bortle ? ` · YOUR SKY: BORTLE ${targets.bortle}` : ''}</span></div>
+                  {targets.picks.map(p => {
+                    const altPhrase = p.altitude >= 60 ? 'nearly overhead' : p.altitude >= 35 ? 'halfway up the sky' : 'low on the horizon';
+                    return (
+                      <div className="obs-tgt" key={p.id}>
+                        <div className="obs-tgt-top">
+                          <span className="obs-tgt-name">{p.name}</span>
+                          <span className={`obs-tgt-chip ${p.visibleHere ? (p.moonWarning ? 'chip-moon' : 'chip-ok') : 'chip-dark'}`}>
+                            {p.visibleHere ? (p.moonWarning ? '☾ MOONLIGHT HURTS' : '✓ YOUR SKY') : 'NEEDS DARK SITE'}
+                          </span>
+                        </div>
+                        <div className="obs-tgt-sub">{p.blurb}.</div>
+                        <div className="obs-tgt-how">LOOK {p.azCompass} · {altPhrase.toUpperCase()} · BEST {p.bestTime}</div>
+                      </div>
+                    );
+                  })}
                   {tgtPager.dots}
                 </>
               )
