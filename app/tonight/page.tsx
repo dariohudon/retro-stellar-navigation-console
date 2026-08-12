@@ -641,9 +641,14 @@ export default function TonightPage() {
         </div>
       )}
       <header className="obs-header">
-        <h1>⟨ OBSERVATORY ⟩</h1>
+        <div className="obs-clock">
+          <div className="obs-clock-time">{clock}</div>
+          <div className="obs-clock-sub">
+            {new Date().toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: tz }).toUpperCase()}
+            {' · '}{Math.abs(loc.lat).toFixed(2)}°{loc.lat >= 0 ? 'N' : 'S'} {Math.abs(loc.lon).toFixed(2)}°{loc.lon >= 0 ? 'E' : 'W'}{loc.source === 'default' ? ' (DEFAULT)' : ''}
+          </div>
+        </div>
         <div className="obs-loc">
-          <span className="obs-coords">{Math.abs(loc.lat).toFixed(2)}°{loc.lat >= 0 ? 'N' : 'S'} {Math.abs(loc.lon).toFixed(2)}°{loc.lon >= 0 ? 'E' : 'W'}{loc.source === 'default' ? ' (DEFAULT)' : ''} · </span>{clock}
           <div className="obs-theme-picker">
             <button className={theme === 'day' ? 'on' : ''} onClick={() => pickTheme('day')}>DAY</button>
             <button className={theme === 'green' ? 'on' : ''} onClick={() => pickTheme('green')}>GRN</button>
@@ -778,7 +783,7 @@ export default function TonightPage() {
         <div className={openCls('neo')}>
           <div className="obs-card-head" onClick={() => toggle('neo')}>
             <div className="t">◎ NEO WATCH</div>
-            <div className="g">{neo ? `${neo.length} approaches 7d` : 'tap to load'}</div>
+            <div className="g"><span className="g-txt">{neo ? `${neo.length} APPROACHES · 7D` : ''}</span></div>
           </div>
           <div className="obs-card-body" {...neoPager.swipe}>
             {neo ? (
@@ -1015,7 +1020,7 @@ export default function TonightPage() {
         <div className={openCls('map')}>
           <div className="obs-card-head" onClick={() => { if (isDesktop) { window.location.href = '/?desktop=1'; return; } if (open !== 'map') loadCraft(); toggle('map'); }}>
             <div className="t">✷ DEEP SPACE ASSETS</div>
-            <div className="g">{isDesktop ? 'open navigation console →' : craft ? `${craft.length} live` : 'tap for live tracking'}</div>
+            <div className="g"><span className="g-txt">{isDesktop ? 'open navigation console →' : craft ? `${craft.length} LIVE` : ''}</span></div>
           </div>
           <div className="obs-card-body" {...craftPager.swipe}>
             {craft ? (
