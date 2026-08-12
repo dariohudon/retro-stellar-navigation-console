@@ -382,7 +382,7 @@ export default function TonightPage() {
 
   const qs = `?lat=${loc.lat.toFixed(3)}&lon=${loc.lon.toFixed(3)}&tz=${encodeURIComponent(tz)}`;
   const [isDesktop, setIsDesktop] = useState(false);
-  const [theme, setTheme] = useState<'auto' | 'day' | 'green' | 'night' | 'retro'>('auto');
+  const [theme, setTheme] = useState<'auto' | 'day' | 'green' | 'night' | 'retro'>('retro');
   const [menuOpen, setMenuOpen] = useState(false);
   const [showHints, setShowHints] = useState(false);
 
