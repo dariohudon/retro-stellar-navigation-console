@@ -86,7 +86,7 @@
   .obs-card.open { flex: 1 1 auto; display: flex; flex-direction: column; margin: 0 !important; }
   .obs-card.open .obs-card-body {
     flex: 1; max-height: none; overflow-y: auto;
-    padding: 14px 20px 22px; font-size: 14px; line-height: 1.8;
+    padding: 14px 16px 22px; font-size: 14px; line-height: 1.8;
   }
   .obs-card.open .obs-row { padding: 5px 0; }
   .obs-card-head { cursor: pointer; }
@@ -424,6 +424,10 @@
 @media (prefers-reduced-motion: reduce) {
   .obs-card, .obs-card.open .obs-card-body, .obs-hints, .obs-splash-logo * { animation: none !important; }
   .obs-drawer { transition: none; }
+  /* land on end states so the logo still appears */
+  .obs-splash-logo .sl-draw { stroke-dashoffset: 0; }
+  .obs-splash-logo .sl-tick, .obs-splash-logo .sl-sat { opacity: 1; }
+  .obs-splash { animation: none !important; opacity: 1; }
 }
 
 /* ── RETRO mode: seventies mission panel — cream, teal, mustard, terracotta ── */
