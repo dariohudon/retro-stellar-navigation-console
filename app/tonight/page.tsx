@@ -9,6 +9,7 @@ import type { PassesData } from '@/lib/observatory/passes';
 import type { EventsData } from '@/lib/observatory/events';
 import type { MissionsData } from '@/lib/observatory/missions';
 import type { LightPollutionData } from '@/lib/observatory/lightpollution';
+import type { CrewData } from '@/lib/observatory/crew';
 
 interface NeoItem {
   name: string;
@@ -291,7 +292,8 @@ export default function TonightPage() {
   const [isDesktop, setIsDesktop] = useState(false);
   const [theme, setTheme] = useState<'day' | 'green' | 'night'>('day');
   const [craft, setCraft] = useState<Array<{ name: string; distanceAU: number }> | null>(null);
-  const [issView, setIssView] = useState<'list' | 'path'>('list');
+  const [issView, setIssView] = useState(0); // 0 list · 1 sky path · 2 crew
+  const [crew, setCrew] = useState<CrewData | null>(null);
   const [skyView, setSkyView] = useState<0 | 1>(0);
   const [neoView, setNeoView] = useState<0 | 1>(0);
   const [auroraView, setAuroraView] = useState<0 | 1>(0);
@@ -346,6 +348,7 @@ export default function TonightPage() {
     fetch('/api/events' + qs).then(r => r.json()).then(d => !d.error && setEvents(d)).catch(() => {});
     fetch('/api/missions').then(r => r.json()).then(d => !d.error && setMissions(d)).catch(() => {});
     fetch('/api/lightpollution' + qs).then(r => r.json()).then(d => !d.error && setLight(d)).catch(() => {});
+    fetch('/api/crew').then(r => r.json()).then(d => !d.error && setCrew(d)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qs]);
 
@@ -514,8 +517,9 @@ export default function TonightPage() {
 
   const issDots = (
     <div className="obs-dots">
-      <i className={issView === 'list' ? 'on' : ''} onClick={e => { e.stopPropagation(); setIssView('list'); }} />
-      <i className={issView === 'path' ? 'on' : ''} onClick={e => { e.stopPropagation(); setIssView('path'); }} />
+      {[0, 1, 2].map(v => (
+        <i key={v} className={issView === v ? 'on' : ''} onClick={e => { e.stopPropagation(); setIssView(v); }} />
+      ))}
     </div>
   );
 
@@ -742,13 +746,32 @@ export default function TonightPage() {
             onTouchStart={e => { touchX.current = e.touches[0].clientX; }}
             onTouchEnd={e => {
               const dx = e.changedTouches[0].clientX - touchX.current;
-              if (dx < -40) setIssView('path');
-              if (dx > 40) setIssView('list');
+              if (dx < -40) setIssView(v => Math.min(2, v + 1));
+              if (dx > 40) setIssView(v => Math.max(0, v - 1));
             }}
           >
-            {passes ? (
+            {issView === 2 ? (
+              (() => { const crewJsx = (
+                  <>
+                    <div className="obs-row"><span className="k">CURRENT CREW</span><span className="v">{crew ? `${crew.crew.length} HUMANS IN ORBIT` : 'LOADING…'}</span></div>
+                    {crew ? (
+                      <>
+                        {crew.crew.filter(c => c.station === 'ISS').map(c => (
+                          <div className="obs-row" key={c.name}>
+                            <span className="k">{c.agency}</span>
+                            <span className="v">{c.name} · {c.daysInSpace}D ALOFT</span>
+                          </div>
+                        ))}
+                        <div className="obs-row"><span className="k">TIANGONG</span><span className="v hot">{crew.crew.filter(c => c.station === 'TIANGONG').map(c => c.name.split(' ').slice(-1)[0]).join(' · ') || '—'}</span></div>
+                        <span className="obs-tag">LAUNCH LIBRARY · AGENCY GROUPING</span>
+                      </>
+                    ) : <div className="obs-empty">HAILING STATION…</div>}
+                    {issDots}
+                  </>
+                ); return crewJsx; })()
+            ) : passes ? (
               passes.passes.length > 0 ? (
-                issView === 'list' ? (
+                issView === 0 ? (
                   <>
                     {passes.passes.map((p, i) => (
                       <div className={`obs-row obs-pass${i === issPass ? ' sel' : ''}`} key={i} onClick={() => setIssPass(i)}>
