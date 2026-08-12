@@ -912,15 +912,18 @@ export default function TonightPage() {
                     {crew ? (
                       <>
                         {crew.crew.filter(c => c.station === 'ISS').map(c => (
-                          <div className="obs-row" key={c.name}>
-                            <span className="k">{c.agency}</span>
-                            <span className="v">{c.name} · {c.daysInSpace}D ALOFT</span>
+                          <div className="obs-crew" key={c.name}>
+                            {c.photo ? <img src={c.photo} alt="" loading="lazy" /> : <span className="obs-crew-noimg">☺</span>}
+                            <div className="obs-crew-info">
+                              <div className="obs-crew-name">{c.name}</div>
+                              <div className="obs-crew-sub">{c.agency}{c.nationality ? ` · ${c.nationality}` : ''} · {c.daysInSpace} DAYS UP · {c.flights} FLIGHT{c.flights === 1 ? '' : 'S'}{c.spacewalks ? ` · ${c.spacewalks} EVA` : ''}</div>
+                            </div>
                           </div>
                         ))}
                         <div className="obs-row"><span className="k">TIANGONG</span><span className="v hot">{crew.crew.filter(c => c.station === 'TIANGONG').map(c => c.name.split(' ').slice(-1)[0]).join(' · ') || '—'}</span></div>
                         <span className="obs-tag">LAUNCH LIBRARY · AGENCY GROUPING</span>
                       </>
-                    ) : <div className="obs-empty">HAILING STATION…</div>}
+                    ) : <div className="obs-empty">HAILING STATION… (CREW FEED RATE-LIMITED — RETRIES AUTOMATICALLY)</div>}
                     {issDots}
                   </>
                 ); return crewJsx; })()
@@ -929,9 +932,9 @@ export default function TonightPage() {
                 issView === 0 ? (
                   <>
                     {passes.passes.map((p, i) => (
-                      <div className={`obs-row obs-pass${i === issPass ? ' sel' : ''}`} key={i} onClick={() => setIssPass(i)}>
-                        <span className="k">{p.start}</span>
-                        <span className={`v${p.isDark ? '' : ' faded'}`}>{p.startDir}→{p.endDir} · max {p.maxElevation}° · {p.durationMin} MIN{p.isDark ? ' VISIBLE' : ' · DAYLIGHT'}</span>
+                      <div className={`obs-row obs-pass${i === 0 ? ' next' : ''}${i === issPass ? ' sel' : ''}`} key={i} onClick={() => setIssPass(i)}>
+                        <span className="k">{i === 0 ? '▶ ' : ''}{p.start}</span>
+                        <span className={`v${p.isDark ? '' : ' faded'}`}>{p.startDir}→{p.endDir} · max {p.maxElevation}° · {p.durationMin} MIN</span>
                       </div>
                     ))}
                     <span className="obs-tag">CELESTRAK TLE · COMPUTED LOCAL</span>

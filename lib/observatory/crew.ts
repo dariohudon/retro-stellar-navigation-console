@@ -3,6 +3,10 @@ export interface CrewMember {
   agency: string;
   station: 'ISS' | 'TIANGONG';
   daysInSpace: number;
+  photo: string | null;
+  nationality: string;
+  flights: number;
+  spacewalks: number;
 }
 
 export interface CrewData {
@@ -15,6 +19,10 @@ interface Ll2Astro {
   agency?: { abbrev?: string };
   time_in_space?: string; // ISO8601 duration e.g. P384DT6H39M35S
   type?: { name?: string };
+  profile_image_thumbnail?: string;
+  nationality?: string;
+  flights_count?: number;
+  spacewalks_count?: number;
 }
 
 function parseDays(dur: string | undefined): number {
@@ -38,6 +46,10 @@ async function fetchCrewLive(): Promise<CrewData> {
         // agency-based grouping: CNSA flies Tiangong; everyone else is ISS
         station: (agency === 'CNSA' ? 'TIANGONG' : 'ISS') as CrewMember['station'],
         daysInSpace: parseDays(a.time_in_space),
+        photo: a.profile_image_thumbnail ?? null,
+        nationality: (a.nationality ?? '').toUpperCase(),
+        flights: a.flights_count ?? 0,
+        spacewalks: a.spacewalks_count ?? 0,
       };
     })
     .sort((a, b) => b.daysInSpace - a.daysInSpace);
