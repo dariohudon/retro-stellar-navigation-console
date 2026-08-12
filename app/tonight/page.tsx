@@ -29,7 +29,13 @@ function useClock() {
 
 export default function TonightPage() {
   const clock = useClock();
-  const [open, setOpen] = useState<string>('aurora');
+  const [open, setOpen] = useState<string>('');
+  const [splash, setSplash] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setSplash(false), 1200);
+    return () => clearTimeout(t);
+  }, []);
   const [isDesktop, setIsDesktop] = useState(false);
   const [theme, setTheme] = useState<'day' | 'green' | 'night'>('day');
   const [craft, setCraft] = useState<Array<{ name: string; distanceAU: number }> | null>(null);
@@ -118,6 +124,13 @@ export default function TonightPage() {
 
   return (
     <div className={`obs-root${theme !== 'day' ? ` ${theme}` : ''}`}>
+      {splash && (
+        <div className="obs-splash">
+          <div className="obs-splash-mark">✷</div>
+          <div className="obs-splash-title">RETRO STELLAR</div>
+          <div className="obs-splash-sub">ASTRONOMY</div>
+        </div>
+      )}
       <header className="obs-header">
         <h1>⟨ OBSERVATORY ⟩</h1>
         <div className="obs-loc">
@@ -276,6 +289,13 @@ export default function TonightPage() {
         </div>
 
       </div>
+
+      {open && !isDesktop && (
+        <div className="obs-pile" onClick={() => setOpen('')}>
+          <i /><i /><i />
+          <span>▤ 5 MORE CARDS — TAP TO RETURN</span>
+        </div>
+      )}
 
       <nav className="obs-nav">
         <a className="active" href="/tonight"><span>▤</span>TONIGHT</a>

@@ -4,6 +4,14 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Retro Stellar Navigation Console",
   description: "Tactical solar system navigation — Sol system survey map",
+  appleWebApp: {
+    capable: true,
+    title: "Observatory",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

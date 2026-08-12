@@ -71,6 +71,7 @@
   .obs-stack.has-open {
     display: flex; flex-direction: column;
     min-height: calc(100dvh - 122px); /* header + status bar */
+    padding-bottom: 62px; /* clear the bottom pile */
   }
   /* wallet mode: the open card owns the screen; the rest leave entirely */
   .obs-stack.has-open .obs-card:not(.open) { display: none; }
@@ -143,6 +144,51 @@
 }
 .obs-nav a.active { color: var(--hud-green); }
 .obs-nav a span { display: block; font-size: 16px; margin-bottom: 3px; }
+
+/* ── Splash ── */
+.obs-splash {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--hud-bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; pointer-events: none;
+  animation: obs-splash-seq 1.2s ease forwards;
+}
+.obs-splash-mark { font-size: 44px; color: var(--hud-green); animation: obs-splash-spin 1.2s ease; }
+.obs-splash-title { font-size: 20px; font-weight: 700; letter-spacing: 6px; color: var(--hud-amber); }
+.obs-splash-sub { font-size: 11px; letter-spacing: 10px; color: var(--hud-green-faint); }
+@keyframes obs-splash-seq {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes obs-splash-spin {
+  0% { transform: rotate(0deg) scale(0.6); }
+  60% { transform: rotate(180deg) scale(1.15); }
+  100% { transform: rotate(180deg) scale(1); }
+}
+
+/* ── Bottom pile: hint that the rest of the stack is waiting ── */
+.obs-pile {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+  padding: 26px 14px calc(12px + env(safe-area-inset-bottom));
+  display: flex; justify-content: center; align-items: flex-end;
+  cursor: pointer;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.9) 55%);
+}
+.obs-pile i {
+  position: absolute; left: 14px; right: 14px; height: 30px;
+  border: 1px solid var(--hud-border); border-bottom: none;
+  border-radius: 12px 12px 0 0; background: #0b0b0b;
+}
+.obs-pile i:nth-child(1) { bottom: 16px; opacity: 0.35; transform: scale(0.92); }
+.obs-pile i:nth-child(2) { bottom: 10px; opacity: 0.6; transform: scale(0.96); }
+.obs-pile i:nth-child(3) { bottom: 4px; opacity: 0.9; }
+.obs-pile span {
+  position: relative; z-index: 1; font-size: 10px; letter-spacing: 1.5px;
+  color: var(--hud-green-dim); padding-bottom: 10px;
+}
+@media (min-width: 900px) { .obs-pile { display: none; } }
 
 /* ── Mobile: no bottom nav at all — cards are the whole UI ── */
 @media (max-width: 899px) {
