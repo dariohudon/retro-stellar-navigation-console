@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Retro Stellar Navigation Console",
-  description: "Tactical solar system navigation — Sol system survey map",
+  metadataBase: new URL("https://stellar.brightening.ca"),
+  title: "Retro Stellar Astronomy",
+  description:
+    "A retro mission-control observatory for the night sky over Calgary — live aurora forecasts, cloud conditions, visible planets, ISS passes, and near-Earth asteroids at a glance.",
   appleWebApp: {
     capable: true,
     title: "Observatory",
@@ -11,6 +13,22 @@ export const metadata: Metadata = {
   },
   icons: {
     apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "Retro Stellar Astronomy",
+    description:
+      "Live aurora, sky conditions, planets, ISS passes, and near-Earth asteroids — a retro mission-control observatory for Calgary skies.",
+    url: "https://stellar.brightening.ca/tonight",
+    siteName: "Retro Stellar Astronomy",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Retro Stellar Astronomy",
+    description:
+      "Live aurora, sky conditions, planets, ISS passes, and near-Earth asteroids — a retro mission-control observatory for Calgary skies.",
+    images: ["/og-image.png"],
   },
 };
 
