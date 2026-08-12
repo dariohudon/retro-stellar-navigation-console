@@ -210,14 +210,14 @@
 }
 .obs-splash-logo { width: 128px; height: 128px; }
 .obs-splash-logo .sl-draw {
-  stroke: #8CACA4; /* Albertans in Space sage */
+  stroke: #6F9A90; /* Albertans in Space sage, deepened to read on light */
   stroke-dasharray: 400; stroke-dashoffset: 400;
   animation: sl-drawin 0.8s ease forwards;
 }
-.obs-splash-logo .sl-orbit { stroke: #9DB8B0; animation-delay: 0.12s; }
-.obs-splash-logo .sl-ring { stroke: rgba(140, 172, 164, 0.55); animation-delay: 0.2s; }
-.obs-splash-logo .sl-tick { stroke: rgba(140, 172, 164, 0.55); opacity: 0; animation: sl-fadein 0.3s ease 0.5s forwards; }
-.obs-splash-logo .sl-sat { fill: #D28E7C; opacity: 0; animation: sl-fadein 0.3s ease 0.6s forwards; }
+.obs-splash-logo .sl-orbit { stroke: #7FA79D; animation-delay: 0.12s; }
+.obs-splash-logo .sl-ring { stroke: rgba(111, 154, 144, 0.6); animation-delay: 0.2s; }
+.obs-splash-logo .sl-tick { stroke: rgba(111, 154, 144, 0.6); opacity: 0; animation: sl-fadein 0.3s ease 0.5s forwards; }
+.obs-splash-logo .sl-sat { fill: #C1705B; opacity: 0; animation: sl-fadein 0.3s ease 0.6s forwards; }
 .obs-splash-title { font-size: 20px; font-weight: 700; letter-spacing: 6px; color: var(--hud-amber); }
 .obs-splash-sub { font-size: 11px; letter-spacing: 10px; color: var(--hud-green-faint); }
 @keyframes sl-drawin { to { stroke-dashoffset: 0; } }
