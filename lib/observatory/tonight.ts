@@ -37,7 +37,7 @@ const SHOWERS: Array<{ name: string; month: number; day: number }> = [
 
 function fmtLocal(d: Date | null, tz: string): string | null {
   if (!d) return null;
-  return d.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false, hourCycle: 'h23', timeZone: tz });
+  return d.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz });
 }
 
 function compass(az: number): string {

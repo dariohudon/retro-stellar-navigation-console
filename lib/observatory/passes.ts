@@ -31,7 +31,7 @@ function compass(azRad: number): string {
 function fmtLocal(d: Date, tz: string): string {
   return d.toLocaleString('en-CA', {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-    hour12: false, hourCycle: 'h23', timeZone: tz,
+    hourCycle: 'h23', timeZone: tz,
   });
 }
 

@@ -59,7 +59,7 @@ function useClock(tz: string) {
   useEffect(() => {
     const tick = () => {
       const parts = new Date().toLocaleTimeString('en-CA', {
-        hour: '2-digit', minute: '2-digit', hour12: false, hourCycle: 'h23', timeZone: tz, timeZoneName: 'short',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz, timeZoneName: 'short',
       });
       setNow(parts);
     };
