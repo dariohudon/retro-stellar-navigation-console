@@ -119,6 +119,7 @@ export default function TonightPage() {
     fetch('/api/aurora').then(r => r.json()).then(d => !d.error && setAurora(d)).catch(() => {});
     fetch('/api/conditions').then(r => r.json()).then(d => !d.error && setConditions(d)).catch(() => {});
     fetch('/api/tonight').then(r => r.json()).then(d => !d.error && setTonight(d)).catch(() => {});
+    fetch('/api/passes').then(r => r.json()).then(d => !d.error && setPasses(d)).catch(() => {});
   }, []);
 
   const loadPasses = useCallback(() => {
@@ -163,6 +164,21 @@ export default function TonightPage() {
   };
 
   const openCls = (id: string) => `obs-card${open === id || isDesktop ? ' open' : ''}`;
+
+  // ── glance status: can you actually see anything tonight? ──
+  type DotColor = 'green' | 'amber' | 'red' | null;
+  const skyDot: DotColor = !conditions ? null : conditions.score >= 7 ? 'green' : conditions.score >= 4 ? 'amber' : 'red';
+  const auroraDot: DotColor = !aurora || !conditions ? null
+    : skyDot === 'red' ? 'red'
+    : Math.max(aurora.kpNow, aurora.kpMax24h) >= 5 ? (skyDot === 'amber' ? 'amber' : 'green')
+    : Math.max(aurora.kpNow, aurora.kpMax24h) >= 4 ? 'amber'
+    : 'red';
+  const darkPasses = passes ? passes.passes.filter(p => p.isDark) : [];
+  const issDot: DotColor = !passes || !conditions ? null
+    : darkPasses.length === 0 || skyDot === 'red' ? 'red'
+    : darkPasses.some(p => p.maxElevation >= 25) && skyDot === 'green' ? 'green'
+    : 'amber';
+  const Dot = ({ c }: { c: DotColor }) => (c ? <i className={`obs-dot ${c}`} /> : null);
 
   const issDots = (
     <div className="obs-dots">
@@ -213,7 +229,7 @@ export default function TonightPage() {
         <div className={openCls('aurora')}>
           <div className="obs-card-head" onClick={() => toggle('aurora')}>
             <div className="t">▲ AURORA WATCH</div>
-            <div className="g">{aurora ? <span className={aurora.kpNow >= 4 ? 'hot' : ''}>KP {aurora.kpNow.toFixed(1)} · {aurora.stormLevel}</span> : 'LOADING…'}</div>
+            <div className="g"><span className="g-txt">{aurora ? <span className={aurora.kpNow >= 4 ? 'hot' : ''}>KP {aurora.kpNow.toFixed(1)} · {aurora.stormLevel}</span> : 'LOADING…'}</span><Dot c={auroraDot} /></div>
           </div>
           <div className="obs-card-body">
             {aurora ? (
@@ -233,7 +249,7 @@ export default function TonightPage() {
         <div className={openCls('sky')}>
           <div className="obs-card-head" onClick={() => toggle('sky')}>
             <div className="t">◑ TONIGHT&apos;S SKY</div>
-            <div className="g">{tonight ? `${tonight.planets.filter(p => p.visible).length} planets up · moon ${tonight.moon.illumination}%` : 'LOADING…'}</div>
+            <div className="g"><span className="g-txt">{tonight ? `${tonight.planets.filter(p => p.visible).length} planets up · moon ${tonight.moon.illumination}%` : 'LOADING…'}</span><Dot c={skyDot} /></div>
           </div>
           <div className="obs-card-body">
             {tonight ? (
@@ -260,7 +276,7 @@ export default function TonightPage() {
         <div className={openCls('conditions')}>
           <div className="obs-card-head" onClick={() => toggle('conditions')}>
             <div className="t">☁ CONDITIONS</div>
-            <div className="g">{conditions ? <span className={conditions.score >= 7 ? 'hot' : ''}>{conditions.summary} · {conditions.score}/10</span> : 'LOADING…'}</div>
+            <div className="g"><span className="g-txt">{conditions ? <span className={conditions.score >= 7 ? 'hot' : ''}>{conditions.summary} · {conditions.score}/10</span> : 'LOADING…'}</span><Dot c={skyDot} /></div>
           </div>
           <div className="obs-card-body">
             {conditions ? (
@@ -293,7 +309,7 @@ export default function TonightPage() {
         <div className={openCls('passes')}>
           <div className="obs-card-head" onClick={() => toggle('passes')}>
             <div className="t">✦ ISS PASSES</div>
-            <div className="g">{passes ? `${passes.passes.length} in 48h` : 'tap to compute'}</div>
+            <div className="g"><span className="g-txt">{passes ? `${darkPasses.length} visible · ${passes.passes.length} total` : 'LOADING…'}</span><Dot c={issDot} /></div>
           </div>
           <div
             className="obs-card-body"
@@ -311,7 +327,7 @@ export default function TonightPage() {
                     {passes.passes.map((p, i) => (
                       <div className={`obs-row obs-pass${i === issPass ? ' sel' : ''}`} key={i} onClick={() => setIssPass(i)}>
                         <span className="k">{p.start}</span>
-                        <span className="v">{p.startDir}→{p.endDir} · max {p.maxElevation}° · {p.durationMin} min</span>
+                        <span className={`v${p.isDark ? '' : ' faded'}`}>{p.startDir}→{p.endDir} · max {p.maxElevation}°{p.isDark ? '' : ' · DAYLIGHT'}</span>
                       </div>
                     ))}
                     <span className="obs-tag">CELESTRAK TLE · COMPUTED LOCAL</span>

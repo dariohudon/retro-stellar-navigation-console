@@ -1,4 +1,5 @@
 import * as satellite from 'satellite.js';
+import { Body, Observer, Equator, Horizon } from 'astronomy-engine';
 import { SITE } from './site';
 
 export interface Pass {
@@ -8,6 +9,8 @@ export interface Pass {
   startDir: string;
   endDir: string;
   durationMin: number;
+  /** pass occurs in darkness (sun below -6°), i.e. potentially visible */
+  isDark: boolean;
   /** az/el track sampled through the pass, for sky-path plotting */
   points: Array<{ az: number; el: number }>;
 }
@@ -79,6 +82,10 @@ export async function fetchIssPasses(): Promise<PassesData> {
       // downsample long tracks to ~24 points
       const stride = Math.max(1, Math.ceil(track.length / 24));
       const points = track.filter((_, i) => i % stride === 0 || i === track.length - 1);
+      const mid = new Date((passStart + time.getTime()) / 2);
+      const obs = new Observer(SITE.lat, SITE.lon, SITE.elevation);
+      const sunEq = Equator(Body.Sun, mid, obs, true, true);
+      const sunHor = Horizon(mid, obs, sunEq.ra, sunEq.dec, 'normal');
       passes.push({
         start: fmtLocal(new Date(passStart)),
         end: fmtLocal(time),
@@ -86,6 +93,7 @@ export async function fetchIssPasses(): Promise<PassesData> {
         startDir,
         endDir,
         durationMin: Math.round((time.getTime() - passStart) / 60000),
+        isDark: sunHor.altitude < -6,
         points,
       });
       if (passes.length >= 6) break;
