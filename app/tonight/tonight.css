@@ -359,3 +359,58 @@
 .obs-drawer-foot .odf-ver { color: var(--hud-green); margin-top: 4px; }
 .obs-root.night .obs-drawer { background: #120707; }
 .obs-root.green .obs-drawer { background: #05140b; }
+
+/* ── verdict line ── */
+.obs-verdict {
+  padding: 12px 18px 2px; font-size: 13.5px; font-weight: 700;
+  letter-spacing: 1px; color: var(--hud-green-mid); line-height: 1.55;
+}
+.obs-verdict b { color: var(--hud-green); font-weight: 700; }
+
+/* ── card icons ── */
+.obs-card-head .t { display: flex; align-items: center; gap: 9px; }
+.obs-icon { width: 17px; height: 17px; color: var(--hud-green); flex-shrink: 0; }
+
+/* ── skeleton loaders ── */
+.obs-skel { padding: 6px 0 10px; }
+.obs-skel-row {
+  height: 12px; border-radius: 3px; margin: 10px 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: obs-shimmer 1.3s ease infinite;
+}
+@keyframes obs-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ── card open/close motion ── */
+@media (max-width: 899px) {
+  .obs-card { animation: obs-cardin 0.3s ease; }
+  .obs-card.open .obs-card-body { animation: obs-bodyin 0.32s ease; }
+}
+@keyframes obs-cardin { from { opacity: 0.35; transform: translateY(12px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes obs-bodyin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.obs-dots i { transition: background 0.2s, border-color 0.2s, transform 0.2s; }
+.obs-dots i.on { transform: scale(1.25); }
+
+/* ── freshness tag ── */
+.obs-upd { color: var(--hud-green-faint); border-style: dashed; }
+
+/* ── first-visit hints ── */
+.obs-hints {
+  position: fixed; left: 14px; right: 14px; z-index: 90;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  background: #0d0d0d; border: 1px solid var(--hud-green-dim); border-radius: 10px;
+  padding: 12px 14px; display: flex; align-items: center; gap: 12px;
+  font-size: 10.5px; letter-spacing: 1px; color: var(--hud-green-mid); line-height: 1.6;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+  animation: obs-cardin 0.4s ease;
+}
+.obs-hints button {
+  background: none; border: 1px solid var(--hud-green); border-radius: 6px;
+  color: var(--hud-green); font-family: inherit; font-size: 10.5px; font-weight: 700;
+  letter-spacing: 1px; padding: 7px 11px; cursor: pointer; flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .obs-card, .obs-card.open .obs-card-body, .obs-hints, .obs-splash-logo * { animation: none !important; }
+  .obs-drawer { transition: none; }
+}

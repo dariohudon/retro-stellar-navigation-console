@@ -16,6 +16,8 @@ export interface PlanetInfo {
 }
 
 export interface TonightData {
+  /** sun below -6° right now at this site */
+  isNight: boolean;
   darknessStart: string | null;
   darknessEnd: string | null;
   moon: { illumination: number; phaseName: string; rise: string | null; set: string | null; altitude: number; azimuth: number };
@@ -61,6 +63,8 @@ export function computeTonight(lat = SITE.lat, lon = SITE.lon, tz = SITE.timezon
   const obs = new Observer(lat, lon, 800);
   const now = new Date();
 
+  const sunEq = Equator(Body.Sun, now, obs, true, true);
+  const sunHor = Horizon(now, obs, sunEq.ra, sunEq.dec, 'normal');
   const duskEvent = SearchAltitude(Body.Sun, obs, -1, now, 2, -18);
   const dawnEvent = duskEvent ? SearchAltitude(Body.Sun, obs, +1, duskEvent.date, 2, -18) : null;
 
@@ -111,6 +115,7 @@ export function computeTonight(lat = SITE.lat, lon = SITE.lon, tz = SITE.timezon
   }
 
   return {
+    isNight: sunHor.altitude < -6,
     darknessStart: fmtLocal(duskEvent ? duskEvent.date : null, tz),
     darknessEnd: fmtLocal(dawnEvent ? dawnEvent.date : null, tz),
     moon: {

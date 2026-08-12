@@ -15,6 +15,8 @@ export interface ConditionsData {
   visibilityKm: number;
   score: number;
   summary: string;
+  /** next night (after tonight) with decent skies, e.g. "THU" — null if none in 6 days */
+  outlook: string | null;
   fetchedAt: string;
 }
 
@@ -23,7 +25,7 @@ export async function fetchConditions(lat = SITE.lat, lon = SITE.lon, tz = SITE.
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&hourly=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,visibility,` +
     `temperature_2m,dew_point_2m,relative_humidity_2m,wind_speed_10m` +
-    `&forecast_days=2&timezone=${encodeURIComponent(tz)}`;
+    `&forecast_days=7&timezone=${encodeURIComponent(tz)}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`open-meteo ${res.status}`);
   const j = await res.json();
@@ -51,6 +53,22 @@ export async function fetchConditions(lat = SITE.lat, lon = SITE.lon, tz = SITE.
   }
   if (nightClouds.length === 0) nightClouds = [h.cloud_cover[idx]];
   const avgCloud = nightClouds.reduce((a, b) => a + b, 0) / nightClouds.length;
+
+  // outlook: scan following nights (21:00–03:00) for avg cloud <= 40%
+  let outlook: string | null = null;
+  for (let day = 1; day <= 6 && !outlook; day++) {
+    const clouds: number[] = [];
+    for (let i = 0; i < h.time.length; i++) {
+      const t = new Date(h.time[i]);
+      const dayDiff = Math.floor((t.getTime() - now.getTime()) / 86400000);
+      const hh = parseInt(h.time[i].slice(11, 13), 10);
+      if ((dayDiff === day && hh >= 21) || (dayDiff === day + 1 && hh <= 3)) clouds.push(h.cloud_cover[i]);
+    }
+    if (clouds.length >= 4 && clouds.reduce((a, b) => a + b, 0) / clouds.length <= 40) {
+      const d = new Date(now.getTime() + day * 86400000);
+      outlook = d.toLocaleDateString('en-CA', { weekday: 'short', timeZone: tz }).toUpperCase();
+    }
+  }
   const score = Math.round((100 - avgCloud) / 10);
   const summary = avgCloud <= 20 ? 'CLEAR' : avgCloud <= 45 ? 'PARTLY CLOUDY' : avgCloud <= 75 ? 'MOSTLY CLOUDY' : 'OVERCAST';
 
@@ -69,6 +87,7 @@ export async function fetchConditions(lat = SITE.lat, lon = SITE.lon, tz = SITE.
     visibilityKm: Math.round((h.visibility[idx] ?? 0) / 1000),
     score,
     summary,
+    outlook,
     fetchedAt: new Date().toISOString(),
   };
 }
