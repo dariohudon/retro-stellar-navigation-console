@@ -22,7 +22,7 @@ function parseDays(dur: string | undefined): number {
   return m ? parseInt(m[1], 10) : 0;
 }
 
-export async function fetchCrew(): Promise<CrewData> {
+async function fetchCrewLive(): Promise<CrewData> {
   const res = await fetch('https://ll.thespacedevs.com/2.2.0/astronaut/?in_space=true&limit=30&format=json', {
     signal: AbortSignal.timeout(20000),
   });
@@ -42,4 +42,10 @@ export async function fetchCrew(): Promise<CrewData> {
     })
     .sort((a, b) => b.daysInSpace - a.daysInSpace);
   return { crew, fetchedAt: new Date().toISOString() };
+}
+
+import { fetchWithDiskCache } from './persist';
+
+export async function fetchCrew() {
+  return fetchWithDiskCache('crew', 24 * 60 * 60 * 1000, fetchCrewLive);
 }

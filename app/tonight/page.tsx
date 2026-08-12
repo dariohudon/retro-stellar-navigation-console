@@ -722,64 +722,6 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className={openCls('passes')}>
-          <div className="obs-card-head" onClick={() => toggle('passes')}>
-            <div className="t">✦ ISS PASSES</div>
-            <div className="g"><span className="g-txt">{passes ? `${darkPasses.length} visible · ${passes.passes.length} total` : 'LOADING…'}</span><Dot c={issDot} /></div>
-          </div>
-          <div
-            className="obs-card-body"
-            onTouchStart={e => { touchX.current = e.touches[0].clientX; }}
-            onTouchEnd={e => {
-              const dx = e.changedTouches[0].clientX - touchX.current;
-              if (dx < -40) setIssView(v => Math.min(2, v + 1));
-              if (dx > 40) setIssView(v => Math.max(0, v - 1));
-            }}
-          >
-            {issView === 2 ? (
-              (() => { const crewJsx = (
-                  <>
-                    <div className="obs-row"><span className="k">CURRENT CREW</span><span className="v">{crew ? `${crew.crew.length} HUMANS IN ORBIT` : 'LOADING…'}</span></div>
-                    {crew ? (
-                      <>
-                        {crew.crew.filter(c => c.station === 'ISS').map(c => (
-                          <div className="obs-row" key={c.name}>
-                            <span className="k">{c.agency}</span>
-                            <span className="v">{c.name} · {c.daysInSpace}D ALOFT</span>
-                          </div>
-                        ))}
-                        <div className="obs-row"><span className="k">TIANGONG</span><span className="v hot">{crew.crew.filter(c => c.station === 'TIANGONG').map(c => c.name.split(' ').slice(-1)[0]).join(' · ') || '—'}</span></div>
-                        <span className="obs-tag">LAUNCH LIBRARY · AGENCY GROUPING</span>
-                      </>
-                    ) : <div className="obs-empty">HAILING STATION…</div>}
-                    {issDots}
-                  </>
-                ); return crewJsx; })()
-            ) : passes ? (
-              passes.passes.length > 0 ? (
-                issView === 0 ? (
-                  <>
-                    {passes.passes.map((p, i) => (
-                      <div className={`obs-row obs-pass${i === issPass ? ' sel' : ''}`} key={i} onClick={() => setIssPass(i)}>
-                        <span className="k">{p.start}</span>
-                        <span className={`v${p.isDark ? '' : ' faded'}`}>{p.startDir}→{p.endDir} · max {p.maxElevation}°{p.isDark ? '' : ' · DAYLIGHT'}</span>
-                      </div>
-                    ))}
-                    <span className="obs-tag">CELESTRAK TLE · COMPUTED LOCAL</span>
-                    {issDots}
-                  </>
-                ) : (
-                  <>
-                    <div className="obs-row"><span className="k">PASS {passes.passes[issPass].start}</span><span className="v">EDGE = HORIZON · CENTRE = OVERHEAD</span></div>
-                    <SkyPath pass={passes.passes[issPass]} />
-                    {issDots}
-                  </>
-                )
-              ) : <div className="obs-empty">NO PASSES ABOVE 10° IN NEXT 48H</div>
-            ) : <div className="obs-empty">PROPAGATING ORBIT…</div>}
-          </div>
-        </div>
-
         <div className={openCls('neo')}>
           <div className="obs-card-head" onClick={() => toggle('neo')}>
             <div className="t">◎ NEO WATCH</div>
@@ -948,6 +890,64 @@ export default function TonightPage() {
         </div>
 
         <div className="obs-section">// SPACEFLIGHT</div>
+
+        <div className={openCls('passes')}>
+          <div className="obs-card-head" onClick={() => toggle('passes')}>
+            <div className="t">✦ ISS</div>
+            <div className="g"><span className="g-txt">{passes ? `${darkPasses.length} visible · ${passes.passes.length} total` : 'LOADING…'}</span><Dot c={issDot} /></div>
+          </div>
+          <div
+            className="obs-card-body"
+            onTouchStart={e => { touchX.current = e.touches[0].clientX; }}
+            onTouchEnd={e => {
+              const dx = e.changedTouches[0].clientX - touchX.current;
+              if (dx < -40) setIssView(v => Math.min(2, v + 1));
+              if (dx > 40) setIssView(v => Math.max(0, v - 1));
+            }}
+          >
+            {issView === 2 ? (
+              (() => { const crewJsx = (
+                  <>
+                    <div className="obs-row"><span className="k">CURRENT CREW</span><span className="v">{crew ? `${crew.crew.length} HUMANS IN ORBIT` : 'LOADING…'}</span></div>
+                    {crew ? (
+                      <>
+                        {crew.crew.filter(c => c.station === 'ISS').map(c => (
+                          <div className="obs-row" key={c.name}>
+                            <span className="k">{c.agency}</span>
+                            <span className="v">{c.name} · {c.daysInSpace}D ALOFT</span>
+                          </div>
+                        ))}
+                        <div className="obs-row"><span className="k">TIANGONG</span><span className="v hot">{crew.crew.filter(c => c.station === 'TIANGONG').map(c => c.name.split(' ').slice(-1)[0]).join(' · ') || '—'}</span></div>
+                        <span className="obs-tag">LAUNCH LIBRARY · AGENCY GROUPING</span>
+                      </>
+                    ) : <div className="obs-empty">HAILING STATION…</div>}
+                    {issDots}
+                  </>
+                ); return crewJsx; })()
+            ) : passes ? (
+              passes.passes.length > 0 ? (
+                issView === 0 ? (
+                  <>
+                    {passes.passes.map((p, i) => (
+                      <div className={`obs-row obs-pass${i === issPass ? ' sel' : ''}`} key={i} onClick={() => setIssPass(i)}>
+                        <span className="k">{p.start}</span>
+                        <span className={`v${p.isDark ? '' : ' faded'}`}>{p.startDir}→{p.endDir} · max {p.maxElevation}° · {p.durationMin} MIN{p.isDark ? ' VISIBLE' : ' · DAYLIGHT'}</span>
+                      </div>
+                    ))}
+                    <span className="obs-tag">CELESTRAK TLE · COMPUTED LOCAL</span>
+                    {issDots}
+                  </>
+                ) : (
+                  <>
+                    <div className="obs-row"><span className="k">PASS {passes.passes[issPass].start}</span><span className="v">EDGE = HORIZON · CENTRE = OVERHEAD</span></div>
+                    <SkyPath pass={passes.passes[issPass]} />
+                    {issDots}
+                  </>
+                )
+              ) : <div className="obs-empty">NO PASSES ABOVE 10° IN NEXT 48H</div>
+            ) : <div className="obs-empty">PROPAGATING ORBIT…</div>}
+          </div>
+        </div>
 
         <div className={openCls('map')}>
           <div className="obs-card-head" onClick={() => { if (isDesktop) { window.location.href = '/?desktop=1'; return; } if (open !== 'map') loadCraft(); toggle('map'); }}>

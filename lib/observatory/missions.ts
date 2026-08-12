@@ -25,7 +25,7 @@ interface Ll2Launch {
   mission?: { name?: string; description?: string };
 }
 
-export async function fetchMissions(): Promise<MissionsData> {
+async function fetchMissionsLive(): Promise<MissionsData> {
   const res = await fetch('https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=12', {
     signal: AbortSignal.timeout(20000),
   });
@@ -53,4 +53,10 @@ export async function fetchMissions(): Promise<MissionsData> {
     });
 
   return { missions, fetchedAt: new Date().toISOString() };
+}
+
+import { fetchWithDiskCache } from './persist';
+
+export async function fetchMissions() {
+  return fetchWithDiskCache('missions', 6 * 60 * 60 * 1000, fetchMissionsLive);
 }
