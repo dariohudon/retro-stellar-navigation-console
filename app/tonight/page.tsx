@@ -31,17 +31,28 @@ export default function TonightPage() {
   const clock = useClock();
   const [open, setOpen] = useState<string>('aurora');
   const [isDesktop, setIsDesktop] = useState(false);
-  const [night, setNight] = useState(false);
+  const [theme, setTheme] = useState<'day' | 'green' | 'night'>('day');
+  const [craft, setCraft] = useState<Array<{ name: string; distanceAU: number }> | null>(null);
 
   useEffect(() => {
-    setNight(localStorage.getItem('obs-night') === '1');
+    const t = localStorage.getItem('obs-theme');
+    if (t === 'green' || t === 'night') setTheme(t);
   }, []);
-  const toggleNight = () => {
-    setNight(n => {
-      localStorage.setItem('obs-night', n ? '0' : '1');
-      return !n;
-    });
+  const pickTheme = (t: 'day' | 'green' | 'night') => {
+    setTheme(t);
+    localStorage.setItem('obs-theme', t);
   };
+
+  const loadCraft = useCallback(() => {
+    if (!craft)
+      fetch('/api/spacecraft')
+        .then(r => r.json())
+        .then(d => {
+          const assets = Object.values(d.assets ?? {}) as Array<{ name: string; distanceAU: number }>;
+          setCraft(assets.map(a => ({ name: a.name, distanceAU: a.distanceAU })));
+        })
+        .catch(() => setCraft([]));
+  }, [craft]);
   const [aurora, setAurora] = useState<AuroraData | null>(null);
   const [conditions, setConditions] = useState<ConditionsData | null>(null);
   const [tonight, setTonight] = useState<TonightData | null>(null);
@@ -92,8 +103,8 @@ export default function TonightPage() {
   }, [neo]);
 
   useEffect(() => {
-    if (isDesktop) { loadPasses(); loadNeo(); }
-  }, [isDesktop, loadPasses, loadNeo]);
+    if (isDesktop) { loadPasses(); loadNeo(); loadCraft(); }
+  }, [isDesktop, loadPasses, loadNeo, loadCraft]);
 
   const toggle = (id: string) => {
     if (isDesktop) return;
@@ -106,12 +117,16 @@ export default function TonightPage() {
   const openCls = (id: string) => `obs-card${open === id || isDesktop ? ' open' : ''}`;
 
   return (
-    <div className={`obs-root${night ? ' night' : ''}`}>
+    <div className={`obs-root${theme !== 'day' ? ` ${theme}` : ''}`}>
       <header className="obs-header">
         <h1>⟨ OBSERVATORY ⟩</h1>
         <div className="obs-loc">
           51.04°N 114.07°W · {clock} MT
-          <button className="obs-night-toggle" onClick={toggleNight}>{night ? 'DAY' : 'NITE'}</button>
+          <div className="obs-theme-picker">
+            <button className={theme === 'day' ? 'on' : ''} onClick={() => pickTheme('day')}>DAY</button>
+            <button className={theme === 'green' ? 'on' : ''} onClick={() => pickTheme('green')}>GRN</button>
+            <button className={theme === 'night' ? 'on' : ''} onClick={() => pickTheme('night')}>RED</button>
+          </div>
         </div>
       </header>
 
@@ -124,8 +139,8 @@ export default function TonightPage() {
 
       <div className={`obs-stack${open && !isDesktop ? ' has-open' : ''}`}>
 
-        <div className={openCls('aurora')} onClick={() => toggle('aurora')}>
-          <div className="obs-card-head">
+        <div className={openCls('aurora')}>
+          <div className="obs-card-head" onClick={() => toggle('aurora')}>
             <div className="t">▲ AURORA WATCH</div>
             <div className="g">{aurora ? <span className={aurora.kpNow >= 4 ? 'hot' : ''}>KP {aurora.kpNow.toFixed(1)} · {aurora.stormLevel}</span> : 'LOADING…'}</div>
           </div>
@@ -144,8 +159,8 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className={openCls('sky')} onClick={() => toggle('sky')}>
-          <div className="obs-card-head">
+        <div className={openCls('sky')}>
+          <div className="obs-card-head" onClick={() => toggle('sky')}>
             <div className="t">◑ TONIGHT&apos;S SKY</div>
             <div className="g">{tonight ? `${tonight.planets.filter(p => p.visible).length} planets up · moon ${tonight.moon.illumination}%` : 'LOADING…'}</div>
           </div>
@@ -171,8 +186,8 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className={openCls('conditions')} onClick={() => toggle('conditions')}>
-          <div className="obs-card-head">
+        <div className={openCls('conditions')}>
+          <div className="obs-card-head" onClick={() => toggle('conditions')}>
             <div className="t">☁ CONDITIONS</div>
             <div className="g">{conditions ? <span className={conditions.score >= 7 ? 'hot' : ''}>{conditions.summary} · {conditions.score}/10</span> : 'LOADING…'}</div>
           </div>
@@ -194,8 +209,8 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className={openCls('passes')} onClick={() => toggle('passes')}>
-          <div className="obs-card-head">
+        <div className={openCls('passes')}>
+          <div className="obs-card-head" onClick={() => toggle('passes')}>
             <div className="t">✦ ISS PASSES</div>
             <div className="g">{passes ? `${passes.passes.length} in 48h` : 'tap to compute'}</div>
           </div>
@@ -216,8 +231,8 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className={openCls('neo')} onClick={() => toggle('neo')}>
-          <div className="obs-card-head">
+        <div className={openCls('neo')}>
+          <div className="obs-card-head" onClick={() => toggle('neo')}>
             <div className="t">◎ NEO WATCH</div>
             <div className="g">{neo ? `${neo.length} approaches 7d` : 'tap to load'}</div>
           </div>
@@ -235,15 +250,28 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className={openCls('map')} onClick={() => { if (!isDesktop && open !== 'map') { toggle('map'); return; } window.location.href = '/?desktop=1'; }}>
-          <div className="obs-card-head">
-            <div className="t">✷ SOLAR MAP</div>
-            <div className="g">open navigation console →</div>
+        <div className={openCls('map')}>
+          <div className="obs-card-head" onClick={() => { if (isDesktop) { window.location.href = '/?desktop=1'; return; } if (open !== 'map') loadCraft(); toggle('map'); }}>
+            <div className="t">✷ DEEP SPACE ASSETS</div>
+            <div className="g">{isDesktop ? 'open navigation console →' : craft ? `${craft.length} live` : 'tap for live tracking'}</div>
           </div>
           <div className="obs-card-body">
-            <div className="obs-row"><span className="k">MODE</span><span className="v">LIVE EPHEMERIS · JPL HORIZONS</span></div>
-            <div className="obs-row"><span className="k">ASSETS</span><span className="v">VGR1 · VGR2 · NH · PSP</span></div>
-            <div className="obs-row"><span className="k">TAP AGAIN</span><span className="v hot">LAUNCH FULL CONSOLE</span></div>
+            {craft ? (
+              <>
+                {craft.map(c => (
+                  <div className="obs-row" key={c.name}>
+                    <span className="k">{c.name.toUpperCase()}</span>
+                    <span className="v">{c.distanceAU.toFixed(1)} AU · {(c.distanceAU * 149.6).toFixed(0)}M km</span>
+                  </div>
+                ))}
+                <span className="obs-tag">NASA/JPL HORIZONS · LIVE</span>
+              </>
+            ) : (
+              <>
+                <div className="obs-row"><span className="k">TRACKING</span><span className="v">VOYAGER 1 · 2 · NEW HORIZONS · PSP</span></div>
+                <div className="obs-empty">CONTACTING DEEP SPACE NETWORK…</div>
+              </>
+            )}
           </div>
         </div>
 
