@@ -69,12 +69,18 @@
 
 /* ── Mobile full-screen mode: open card fills viewport, others compress ── */
 @media (max-width: 899px) {
+  /* open card mode: lock the page to the viewport — no outer scroll */
+  .obs-root:has(.obs-stack.has-open) {
+    display: flex; flex-direction: column;
+    height: 100dvh; overflow: hidden;
+  }
+  .obs-root:has(.obs-stack.has-open) .obs-verdict { display: none; }
   .obs-stack.has-open {
     display: flex; flex-direction: column;
-    /* header (~48) + status (~34) + stack top pad (16) + pile (~78) */
-    min-height: calc(100dvh - 98px);
-    padding-bottom: 82px; /* clear the bottom pile */
+    flex: 1; min-height: 0;
+    padding-bottom: 74px; /* clear the bottom pile */
   }
+  .obs-card.open { min-height: 0; }
   /* wallet mode: the open card owns the screen; the rest leave entirely */
   .obs-stack.has-open .obs-card:not(.open) { display: none; }
   .obs-card.open { flex: 1 1 auto; display: flex; flex-direction: column; margin: 0 !important; }
