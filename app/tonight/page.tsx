@@ -128,6 +128,62 @@ function NeoChart({ items }: { items: NeoItem[] }) {
   );
 }
 
+function KpChart({ forecast, needed, tz }: { forecast: AuroraData['forecast']; needed: number; tz: string }) {
+  const W = 260, H = 130, top = 14, bottom = 26;
+  const plotH = H - top - bottom;
+  const bw = W / Math.max(1, forecast.length);
+  const yFor = (kp: number) => top + plotH - (Math.min(kp, 9) / 9) * plotH;
+  const yNeed = yFor(needed);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="obs-skypath obs-kpchart" aria-label="24h Kp forecast">
+      {forecast.map((f, i) => {
+        const h = (Math.min(f.kp, 9) / 9) * plotH;
+        const cls = f.kp >= needed ? 'kp-go' : f.kp >= needed - 1 ? 'kp-close' : 'kp-quiet';
+        const hr = new Date(f.time).toLocaleTimeString('en-CA', { hour: '2-digit', hourCycle: 'h23', timeZone: tz });
+        return (
+          <g key={f.time}>
+            <rect x={i * bw + 3} y={top + plotH - h} width={bw - 6} height={Math.max(2, h)} className={cls} />
+            <text x={i * bw + bw / 2} y={H - 12} textAnchor="middle" className="sp-lbl">{hr}</text>
+            <text x={i * bw + bw / 2} y={top + plotH - h - 4} textAnchor="middle" className="sp-lbl">{f.kp.toFixed(1)}</text>
+          </g>
+        );
+      })}
+      <line x1="0" y1={yNeed} x2={W} y2={yNeed} stroke="var(--hud-green)" strokeWidth="0.75" strokeDasharray="4 4" />
+      <text x={W - 2} y={yNeed - 4} textAnchor="end" className="sp-lbl sp-peak">VISIBLE HERE ≥ KP {needed}</text>
+    </svg>
+  );
+}
+
+const LADDER_PLANETS: Array<[string, number]> = [
+  ['MERCURY', 0.39], ['VENUS', 0.72], ['EARTH', 1], ['MARS', 1.52],
+  ['JUPITER', 5.2], ['SATURN', 9.5], ['URANUS', 19.2], ['NEPTUNE', 30.1],
+];
+
+function DistanceLadder({ craft }: { craft: Array<{ name: string; distanceAU: number }> }) {
+  const W = 260, H = 300, top = 16, bottom = 12;
+  const maxAU = Math.max(180, ...craft.map(c => c.distanceAU)) * 1.15;
+  const yFor = (au: number) => top + (Math.log10(Math.max(0.3, au) / 0.3) / Math.log10(maxAU / 0.3)) * (H - top - bottom);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="obs-skypath obs-ladder" aria-label="Deep space distances">
+      <line x1={W / 2} y1={top - 6} x2={W / 2} y2={H - bottom} stroke="var(--hud-border)" strokeWidth="1" />
+      <circle cx={W / 2} cy={top - 6} r="4" fill="var(--hud-warning)" />
+      <text x={W / 2 - 10} y={top - 2} textAnchor="end" className="sp-lbl sp-peak">SUN</text>
+      {LADDER_PLANETS.map(([name, au]) => (
+        <g key={name}>
+          <line x1={W / 2 - 6} y1={yFor(au)} x2={W / 2 + 6} y2={yFor(au)} stroke="var(--hud-green-faint)" strokeWidth="1" />
+          <text x={W / 2 - 12} y={yFor(au) + 3} textAnchor="end" className="sp-lbl">{name}</text>
+        </g>
+      ))}
+      {craft.map(c => (
+        <g key={c.name}>
+          <circle cx={W / 2} cy={yFor(c.distanceAU)} r="3" fill="var(--hud-green)" />
+          <text x={W / 2 + 12} y={yFor(c.distanceAU) + 3} className="sp-lbl sp-peak">{c.name.toUpperCase().replace('PARKER SOLAR PROBE', 'PARKER PROBE')} · {c.distanceAU.toFixed(1)} AU</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 function useClock(tz: string) {
   const [now, setNow] = useState('');
   useEffect(() => {
@@ -188,6 +244,8 @@ export default function TonightPage() {
   const [issView, setIssView] = useState<'list' | 'path'>('list');
   const [skyView, setSkyView] = useState<0 | 1>(0);
   const [neoView, setNeoView] = useState<0 | 1>(0);
+  const [auroraView, setAuroraView] = useState<0 | 1>(0);
+  const [craftView, setCraftView] = useState<0 | 1>(0);
   const [events, setEvents] = useState<EventsData | null>(null);
   const [evPage, setEvPage] = useState(0);
   const [issPass, setIssPass] = useState(0);
@@ -311,6 +369,8 @@ export default function TonightPage() {
   });
   const skyPager = pager(skyView, v => setSkyView(v));
   const neoPager = pager(neoView, v => setNeoView(v));
+  const auroraPager = pager(auroraView, v => setAuroraView(v));
+  const craftPager = pager(craftView, v => setCraftView(v));
 
   const nextEvent = events?.events[0] ?? null;
   const evDot: DotColor = !nextEvent ? null : nextEvent.daysAway <= 2 ? 'green' : nextEvent.daysAway <= 7 ? 'amber' : null;
@@ -415,8 +475,16 @@ export default function TonightPage() {
             <div className="t">▲ AURORA WATCH</div>
             <div className="g"><span className="g-txt">{aurora ? <span className={aurora.kpNow >= 4 ? 'hot' : ''}>KP {aurora.kpNow.toFixed(1)} · {aurora.stormLevel}</span> : 'LOADING…'}</span><Dot c={auroraDot} /></div>
           </div>
-          <div className="obs-card-body">
+          <div className="obs-card-body" {...auroraPager.swipe}>
             {aurora ? (
+              auroraView === 1 ? (
+                <>
+                  <div className="obs-row"><span className="k">KP FORECAST · NEXT 24H</span><span className="v">3-HOUR BLOCKS</span></div>
+                  <KpChart forecast={aurora.forecast} needed={aurora.neededKp} tz={tz} />
+                  <span className="obs-tag">NOAA SWPC FORECAST</span>
+                  {auroraPager.dots}
+                </>
+              ) : (
               <>
                 <div className="obs-row"><span className="k">STATUS</span><span className={`v ${aurora.kpNow >= 5 ? 'hot' : ''}`}>{aurora.stormLevel}</span></div>
                 <div className="obs-row"><span className="k">VISIBILITY @ {Math.abs(loc.lat).toFixed(0)}°{loc.lat >= 0 ? 'N' : 'S'}</span><span className={`v ${aurora.kpNow >= 4 ? 'hot' : ''}`}>{aurora.visibility}</span></div>
@@ -425,7 +493,9 @@ export default function TonightPage() {
                 <div className="obs-row"><span className="k">BZ</span><span className="v">{aurora.bz !== null ? `${aurora.bz} nT ${aurora.bz <= -5 ? '(favourable)' : ''}` : 'n/a'}</span></div>
                 <div className="obs-row"><span className="k">SOLAR WIND</span><span className="v">{aurora.windSpeed !== null ? `${Math.round(aurora.windSpeed)} km/s` : 'n/a'}</span></div>
                 <span className="obs-tag">NOAA SWPC</span>
+                {auroraPager.dots}
               </>
+              )
             ) : <div className="obs-empty">ACQUIRING SPACE WEATHER…</div>}
           </div>
         </div>
@@ -546,7 +616,7 @@ export default function TonightPage() {
           <div className="obs-card-body" {...neoPager.swipe}>
             {neo ? (
               neo.length > 0 ? (
-                neoView === 1 ? (
+                neoView === 0 ? (
                   <>
                     <div className="obs-row"><span className="k">MISS DISTANCE MAP</span><span className="v">RADIUS = CLOSEST APPROACH</span></div>
                     <NeoChart items={neo} />
@@ -575,8 +645,15 @@ export default function TonightPage() {
             <div className="t">✷ DEEP SPACE ASSETS</div>
             <div className="g">{isDesktop ? 'open navigation console →' : craft ? `${craft.length} live` : 'tap for live tracking'}</div>
           </div>
-          <div className="obs-card-body">
+          <div className="obs-card-body" {...craftPager.swipe}>
             {craft ? (
+              craftView === 1 ? (
+                <>
+                  <div className="obs-row"><span className="k">DISTANCE LADDER</span><span className="v">LOG SCALE FROM SUN</span></div>
+                  <DistanceLadder craft={craft} />
+                  {craftPager.dots}
+                </>
+              ) : (
               <>
                 {craft.map(c => (
                   <div className="obs-row" key={c.name}>
@@ -585,7 +662,9 @@ export default function TonightPage() {
                   </div>
                 ))}
                 <span className="obs-tag">NASA/JPL HORIZONS · LIVE</span>
+                {craftPager.dots}
               </>
+              )
             ) : (
               <>
                 <div className="obs-row"><span className="k">TRACKING</span><span className="v">VOYAGER 1 · 2 · NEW HORIZONS · PSP</span></div>

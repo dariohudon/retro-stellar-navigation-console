@@ -5,6 +5,10 @@ export interface AuroraData {
   bz: number | null;
   windSpeed: number | null;
   visibility: string;
+  /** Kp needed for "likely" at this latitude */
+  neededKp: number;
+  /** next ~24h of forecast Kp in 3-hour blocks */
+  forecast: Array<{ time: string; kp: number }>;
   fetchedAt: string;
 }
 
@@ -20,12 +24,16 @@ function stormLevel(kp: number): string {
   return 'QUIET';
 }
 
+// Kp needed for "likely" at this latitude (rough auroral-oval model)
+export function neededKp(lat: number): number {
+  return lat >= 60 ? 3 : lat >= 56 ? 3.5 : lat >= 53 ? 4.5 : lat >= 50 ? 5 : lat >= 47 ? 6 : 7.5;
+}
+
 // latitude-aware heuristic: further north needs less Kp
 export function visibility(kp: number, bz: number | null, lat: number): string {
   const boost = bz !== null && bz <= -5 ? 0.5 : 0;
   const eff = kp + boost;
-  // Kp needed for "likely" at this latitude (rough auroral-oval model)
-  const needed = lat >= 60 ? 3 : lat >= 56 ? 3.5 : lat >= 53 ? 4.5 : lat >= 50 ? 5 : lat >= 47 ? 6 : 7.5;
+  const needed = neededKp(lat);
   if (eff >= needed + 1) return 'OVERHEAD DISPLAYS LIKELY';
   if (eff >= needed) return 'LIKELY — WATCH N SKY';
   if (eff >= needed - 1) return 'POSSIBLE LOW ON N HORIZON';
@@ -61,6 +69,7 @@ export async function fetchAurora(lat: number): Promise<AuroraData> {
   }
 
   let kpMax24h = kpNow;
+  const forecast: Array<{ time: string; kp: number }> = [];
   if (forecastRes.status === 'fulfilled' && forecastRes.value.ok) {
     const rows: unknown[] = await forecastRes.value.json();
     const now = Date.now();
@@ -68,6 +77,9 @@ export async function fetchAurora(lat: number): Promise<AuroraData> {
       const v = kpOf(r);
       if (Number.isNaN(v)) continue;
       const t = new Date(timeOf(r).replace(' ', 'T') + 'Z').getTime();
+      if (t > now - 3 * 3600 * 1000 && t < now + 27 * 3600 * 1000 && forecast.length < 9) {
+        forecast.push({ time: new Date(t).toISOString(), kp: v });
+      }
       if (t > now && t < now + 24 * 3600 * 1000) kpMax24h = Math.max(kpMax24h, v);
     }
   }
@@ -99,6 +111,8 @@ export async function fetchAurora(lat: number): Promise<AuroraData> {
     bz,
     windSpeed,
     visibility: visibility(kpEff, bz, lat),
+    neededKp: neededKp(lat),
+    forecast,
     fetchedAt: new Date().toISOString(),
   };
 }

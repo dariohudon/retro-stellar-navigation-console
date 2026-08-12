@@ -259,3 +259,7 @@
   .obs-nav { position: static; border-top: none; padding: 4px 0 18px; }
 }
 .obs-skypath .sp-danger { fill: var(--hud-danger); }
+.obs-kpchart .kp-go { fill: var(--hud-green); }
+.obs-kpchart .kp-close { fill: var(--hud-warning); opacity: 0.85; }
+.obs-kpchart .kp-quiet { fill: var(--hud-green-faint); opacity: 0.4; }
+.obs-ladder { max-width: 280px; }
