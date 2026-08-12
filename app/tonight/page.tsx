@@ -7,6 +7,7 @@ import type { ConditionsData } from '@/lib/observatory/conditions';
 import type { TonightData } from '@/lib/observatory/tonight';
 import type { PassesData } from '@/lib/observatory/passes';
 import type { EventsData } from '@/lib/observatory/events';
+import type { MissionsData } from '@/lib/observatory/missions';
 
 interface NeoItem {
   name: string;
@@ -248,6 +249,8 @@ export default function TonightPage() {
   const [craftView, setCraftView] = useState<0 | 1>(0);
   const [events, setEvents] = useState<EventsData | null>(null);
   const [evPage, setEvPage] = useState(0);
+  const [missions, setMissions] = useState<MissionsData | null>(null);
+  const [msnPage, setMsnPage] = useState(0);
   const [issPass, setIssPass] = useState(0);
   const touchX = useRef(0);
 
@@ -290,6 +293,7 @@ export default function TonightPage() {
     fetch('/api/tonight' + qs).then(r => r.json()).then(d => !d.error && setTonight(d)).catch(() => {});
     fetch('/api/passes' + qs).then(r => r.json()).then(d => !d.error && setPasses(d)).catch(() => {});
     fetch('/api/events' + qs).then(r => r.json()).then(d => !d.error && setEvents(d)).catch(() => {});
+    fetch('/api/missions').then(r => r.json()).then(d => !d.error && setMissions(d)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qs]);
 
@@ -367,6 +371,18 @@ export default function TonightPage() {
       </div>
     ),
   });
+  const msnMax = missions ? missions.missions.length : 0;
+  const msnSwipe = {
+    onTouchStart: (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; },
+    onTouchEnd: (e: React.TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - touchX.current;
+      if (dx < -40) setMsnPage(p => Math.min(msnMax, p + 1));
+      if (dx > 40) setMsnPage(p => Math.max(0, p - 1));
+    },
+  };
+  const fmtMsnDate = (iso: string) => new Date(iso).toLocaleString('en-CA', { month: 'short', day: 'numeric', hourCycle: 'h23', hour: '2-digit', minute: '2-digit', timeZone: tz }).toUpperCase();
+  const msnDays = (iso: string) => Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 86400000));
+
   const skyPager = pager(skyView, v => setSkyView(v));
   const neoPager = pager(neoView, v => setNeoView(v));
   const auroraPager = pager(auroraView, v => setAuroraView(v));
@@ -470,33 +486,36 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className={openCls('aurora')}>
-          <div className="obs-card-head" onClick={() => toggle('aurora')}>
-            <div className="t">▲ AURORA WATCH</div>
-            <div className="g"><span className="g-txt">{aurora ? <span className={aurora.kpNow >= 4 ? 'hot' : ''}>KP {aurora.kpNow.toFixed(1)} · {aurora.stormLevel}</span> : 'LOADING…'}</span><Dot c={auroraDot} /></div>
+        <div className={openCls('conditions')}>
+          <div className="obs-card-head" onClick={() => toggle('conditions')}>
+            <div className="t">☁ WEATHER CONDITIONS</div>
+            <div className="g"><span className="g-txt">{conditions ? <span className={conditions.score >= 7 ? 'hot' : ''}>{conditions.summary} · {conditions.score}/10</span> : 'LOADING…'}</span><Dot c={skyDot} /></div>
           </div>
-          <div className="obs-card-body" {...auroraPager.swipe}>
-            {aurora ? (
-              auroraView === 1 ? (
-                <>
-                  <div className="obs-row"><span className="k">KP FORECAST · NEXT 24H</span><span className="v">3-HOUR BLOCKS</span></div>
-                  <KpChart forecast={aurora.forecast} needed={aurora.neededKp} tz={tz} />
-                  <span className="obs-tag">NOAA SWPC FORECAST</span>
-                  {auroraPager.dots}
-                </>
-              ) : (
+          <div className="obs-card-body">
+            {conditions ? (
               <>
-                <div className="obs-row"><span className="k">STATUS</span><span className={`v ${aurora.kpNow >= 5 ? 'hot' : ''}`}>{aurora.stormLevel}</span></div>
-                <div className="obs-row"><span className="k">VISIBILITY @ {Math.abs(loc.lat).toFixed(0)}°{loc.lat >= 0 ? 'N' : 'S'}</span><span className={`v ${aurora.kpNow >= 4 ? 'hot' : ''}`}>{aurora.visibility}</span></div>
-                <div className="obs-bar"><i style={{ width: `${Math.min(100, (Math.max(aurora.kpNow, aurora.kpMax24h) / 9) * 100)}%` }} /></div>
-                <div className="obs-row"><span className="k">KP FORECAST MAX 24H</span><span className="v">{aurora.kpMax24h.toFixed(1)}</span></div>
-                <div className="obs-row"><span className="k">BZ</span><span className="v">{aurora.bz !== null ? `${aurora.bz} nT ${aurora.bz <= -5 ? '(favourable)' : ''}` : 'n/a'}</span></div>
-                <div className="obs-row"><span className="k">SOLAR WIND</span><span className="v">{aurora.windSpeed !== null ? `${Math.round(aurora.windSpeed)} km/s` : 'n/a'}</span></div>
-                <span className="obs-tag">NOAA SWPC</span>
-                {auroraPager.dots}
+                <div className="obs-graph-title">
+                  <span>SKY CLARITY · NEXT 12H</span>
+                  <span className="obs-legend"><i className="lg-clear" />CLEAR<i className="lg-part" />PARTLY<i className="lg-cloud" />CLOUDY</span>
+                </div>
+                <div className="obs-graph">
+                  {conditions.hourly.map((h, i) => {
+                    const cls = h.cloud <= 25 ? 'clear' : h.cloud <= 60 ? 'part' : 'cloud';
+                    return (
+                      <div className="og-col" key={h.time}>
+                        <div className="og-barwrap"><i className={cls} style={{ height: `${Math.max(4, 100 - h.cloud)}%` }} /></div>
+                        <span className="og-hr">{i % 2 === 0 ? h.time.slice(0, 2) : ''}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="obs-row"><span className="k">CLOUD L / M / H</span><span className="v">{conditions.cloudNow.low}% / {conditions.cloudNow.mid}% / {conditions.cloudNow.high}%</span></div>
+                <div className="obs-row"><span className="k">TEMP / DEW</span><span className="v">{Math.round(conditions.temperature)}°C / {Math.round(conditions.dewPoint)}°C</span></div>
+                <div className="obs-row"><span className="k">WIND</span><span className="v">{Math.round(conditions.windSpeed)} km/h</span></div>
+                <div className="obs-row"><span className="k">SITE</span><span className="v">{loc.source === 'gps' ? `${Math.abs(loc.lat).toFixed(2)}°${loc.lat >= 0 ? 'N' : 'S'} ${Math.abs(loc.lon).toFixed(2)}°${loc.lon >= 0 ? 'E' : 'W'} · LOCAL` : 'CALGARY · DEFAULT'}</span></div>
+                <span className="obs-tag">OPEN-METEO</span>
               </>
-              )
-            ) : <div className="obs-empty">ACQUIRING SPACE WEATHER…</div>}
+            ) : <div className="obs-empty">FETCHING FORECAST…</div>}
           </div>
         </div>
 
@@ -536,36 +555,33 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className={openCls('conditions')}>
-          <div className="obs-card-head" onClick={() => toggle('conditions')}>
-            <div className="t">☁ CONDITIONS</div>
-            <div className="g"><span className="g-txt">{conditions ? <span className={conditions.score >= 7 ? 'hot' : ''}>{conditions.summary} · {conditions.score}/10</span> : 'LOADING…'}</span><Dot c={skyDot} /></div>
+        <div className={openCls('aurora')}>
+          <div className="obs-card-head" onClick={() => toggle('aurora')}>
+            <div className="t">▲ AURORA WATCH</div>
+            <div className="g"><span className="g-txt">{aurora ? <span className={aurora.kpNow >= 4 ? 'hot' : ''}>KP {aurora.kpNow.toFixed(1)} · {aurora.stormLevel}</span> : 'LOADING…'}</span><Dot c={auroraDot} /></div>
           </div>
-          <div className="obs-card-body">
-            {conditions ? (
+          <div className="obs-card-body" {...auroraPager.swipe}>
+            {aurora ? (
+              auroraView === 1 ? (
+                <>
+                  <div className="obs-row"><span className="k">KP FORECAST · NEXT 24H</span><span className="v">3-HOUR BLOCKS</span></div>
+                  <KpChart forecast={aurora.forecast} needed={aurora.neededKp} tz={tz} />
+                  <span className="obs-tag">NOAA SWPC FORECAST</span>
+                  {auroraPager.dots}
+                </>
+              ) : (
               <>
-                <div className="obs-graph-title">
-                  <span>SKY CLARITY · NEXT 12H</span>
-                  <span className="obs-legend"><i className="lg-clear" />CLEAR<i className="lg-part" />PARTLY<i className="lg-cloud" />CLOUDY</span>
-                </div>
-                <div className="obs-graph">
-                  {conditions.hourly.map((h, i) => {
-                    const cls = h.cloud <= 25 ? 'clear' : h.cloud <= 60 ? 'part' : 'cloud';
-                    return (
-                      <div className="og-col" key={h.time}>
-                        <div className="og-barwrap"><i className={cls} style={{ height: `${Math.max(4, 100 - h.cloud)}%` }} /></div>
-                        <span className="og-hr">{i % 2 === 0 ? h.time.slice(0, 2) : ''}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="obs-row"><span className="k">CLOUD L / M / H</span><span className="v">{conditions.cloudNow.low}% / {conditions.cloudNow.mid}% / {conditions.cloudNow.high}%</span></div>
-                <div className="obs-row"><span className="k">TEMP / DEW</span><span className="v">{Math.round(conditions.temperature)}°C / {Math.round(conditions.dewPoint)}°C</span></div>
-                <div className="obs-row"><span className="k">WIND</span><span className="v">{Math.round(conditions.windSpeed)} km/h</span></div>
-                <div className="obs-row"><span className="k">SITE</span><span className="v">{loc.source === 'gps' ? `${Math.abs(loc.lat).toFixed(2)}°${loc.lat >= 0 ? 'N' : 'S'} ${Math.abs(loc.lon).toFixed(2)}°${loc.lon >= 0 ? 'E' : 'W'} · LOCAL` : 'CALGARY · DEFAULT'}</span></div>
-                <span className="obs-tag">OPEN-METEO</span>
+                <div className="obs-row"><span className="k">STATUS</span><span className={`v ${aurora.kpNow >= 5 ? 'hot' : ''}`}>{aurora.stormLevel}</span></div>
+                <div className="obs-row"><span className="k">VISIBILITY @ {Math.abs(loc.lat).toFixed(0)}°{loc.lat >= 0 ? 'N' : 'S'}</span><span className={`v ${aurora.kpNow >= 4 ? 'hot' : ''}`}>{aurora.visibility}</span></div>
+                <div className="obs-bar"><i style={{ width: `${Math.min(100, (Math.max(aurora.kpNow, aurora.kpMax24h) / 9) * 100)}%` }} /></div>
+                <div className="obs-row"><span className="k">KP FORECAST MAX 24H</span><span className="v">{aurora.kpMax24h.toFixed(1)}</span></div>
+                <div className="obs-row"><span className="k">BZ</span><span className="v">{aurora.bz !== null ? `${aurora.bz} nT ${aurora.bz <= -5 ? '(favourable)' : ''}` : 'n/a'}</span></div>
+                <div className="obs-row"><span className="k">SOLAR WIND</span><span className="v">{aurora.windSpeed !== null ? `${Math.round(aurora.windSpeed)} km/s` : 'n/a'}</span></div>
+                <span className="obs-tag">NOAA SWPC</span>
+                {auroraPager.dots}
               </>
-            ) : <div className="obs-empty">FETCHING FORECAST…</div>}
+              )
+            ) : <div className="obs-empty">ACQUIRING SPACE WEATHER…</div>}
           </div>
         </div>
 
@@ -674,12 +690,50 @@ export default function TonightPage() {
           </div>
         </div>
 
+        <div className={openCls('missions')}>
+          <div className="obs-card-head" onClick={() => toggle('missions')}>
+            <div className="t">△ MISSIONS</div>
+            <div className="g"><span className="g-txt">{missions && missions.missions[0] ? `${missions.missions[0].provider} · ${msnDays(missions.missions[0].net) === 0 ? 'TODAY' : `${msnDays(missions.missions[0].net)}d`}` : 'LOADING…'}</span></div>
+          </div>
+          <div className="obs-card-body" {...msnSwipe}>
+            {missions ? (
+              <>
+                {msnPage === 0 ? (
+                  <>
+                    {missions.missions.map((m, i) => (
+                      <div className="obs-row obs-pass" key={m.id} onClick={e => { e.stopPropagation(); setMsnPage(i + 1); }}>
+                        <span className="k">{fmtMsnDate(m.net).split(',')[0]}</span>
+                        <span className="v">{m.name.slice(0, 26)} · {m.provider.split(' ')[0]} ▸</span>
+                      </div>
+                    ))}
+                    <span className="obs-tag">LAUNCH LIBRARY · GLOBAL</span>
+                  </>
+                ) : (() => { const m = missions.missions[msnPage - 1]; return (
+                  <>
+                    <div className="obs-ev-date">{fmtMsnDate(m.net)}{msnDays(m.net) === 0 ? ' · TODAY' : ` · IN ${msnDays(m.net)} DAYS`}</div>
+                    <div className="obs-ev-title">{m.name}</div>
+                    <span className="obs-tag">{m.provider}</span><span className="obs-tag">{m.status}</span>
+                    <div className="obs-row"><span className="k">VEHICLE</span><span className="v">{m.vehicle}</span></div>
+                    <div className="obs-row"><span className="k">SITE</span><span className="v">{m.site}</span></div>
+                    <p className="obs-ev-blurb">{m.blurb}</p>
+                  </>
+                ); })()}
+                <div className="obs-dots">
+                  {Array.from({ length: msnMax + 1 }, (_, i) => (
+                    <i key={i} className={msnPage === i ? 'on' : ''} onClick={e => { e.stopPropagation(); setMsnPage(i); }} />
+                  ))}
+                </div>
+              </>
+            ) : <div className="obs-empty">CONTACTING LAUNCH CONTROL…</div>}
+          </div>
+        </div>
+
       </div>
 
       {open && !isDesktop && (
         <div className="obs-pile" onClick={() => setOpen('')}>
           <i /><i /><i />
-          <span>▤ 6 MORE CARDS — TAP TO RETURN</span>
+          <span>▤ 7 MORE CARDS — TAP TO RETURN</span>
         </div>
       )}
 
