@@ -6,6 +6,7 @@ import type { AuroraData } from '@/lib/observatory/aurora';
 import type { ConditionsData } from '@/lib/observatory/conditions';
 import type { TonightData } from '@/lib/observatory/tonight';
 import type { PassesData } from '@/lib/observatory/passes';
+import type { EventsData } from '@/lib/observatory/events';
 
 interface NeoItem {
   name: string;
@@ -112,6 +113,8 @@ export default function TonightPage() {
   const [theme, setTheme] = useState<'day' | 'green' | 'night'>('day');
   const [craft, setCraft] = useState<Array<{ name: string; distanceAU: number }> | null>(null);
   const [issView, setIssView] = useState<'list' | 'path'>('list');
+  const [events, setEvents] = useState<EventsData | null>(null);
+  const [evPage, setEvPage] = useState(0);
   const [issPass, setIssPass] = useState(0);
   const touchX = useRef(0);
 
@@ -153,6 +156,7 @@ export default function TonightPage() {
     fetch('/api/conditions' + qs).then(r => r.json()).then(d => !d.error && setConditions(d)).catch(() => {});
     fetch('/api/tonight' + qs).then(r => r.json()).then(d => !d.error && setTonight(d)).catch(() => {});
     fetch('/api/passes' + qs).then(r => r.json()).then(d => !d.error && setPasses(d)).catch(() => {});
+    fetch('/api/events' + qs).then(r => r.json()).then(d => !d.error && setEvents(d)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qs]);
 
@@ -214,6 +218,19 @@ export default function TonightPage() {
     : 'amber';
   const Dot = ({ c }: { c: DotColor }) => (c ? <i className={`obs-dot ${c}`} /> : null);
 
+  const nextEvent = events?.events[0] ?? null;
+  const evDot: DotColor = !nextEvent ? null : nextEvent.daysAway <= 2 ? 'green' : nextEvent.daysAway <= 7 ? 'amber' : null;
+  const evCount = events ? events.events.length : 0;
+  const evMax = evCount; // page 0 = list, 1..N = details
+  const evSwipe = {
+    onTouchStart: (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; },
+    onTouchEnd: (e: React.TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - touchX.current;
+      if (dx < -40) setEvPage(p => Math.min(evMax, p + 1));
+      if (dx > 40) setEvPage(p => Math.max(0, p - 1));
+    },
+  };
+
   const issDots = (
     <div className="obs-dots">
       <i className={issView === 'list' ? 'on' : ''} onClick={e => { e.stopPropagation(); setIssView('list'); }} />
@@ -259,6 +276,45 @@ export default function TonightPage() {
       </div>
 
       <div className={`obs-stack${open && !isDesktop ? ' has-open' : ''}`}>
+
+        <div className={openCls('events')}>
+          <div className="obs-card-head" onClick={() => toggle('events')}>
+            <div className="t">☄ EVENTS</div>
+            <div className="g"><span className="g-txt">{nextEvent ? `${nextEvent.title} · ${nextEvent.daysAway === 0 ? 'TODAY' : `${nextEvent.daysAway}d`}` : 'LOADING…'}</span><Dot c={evDot} /></div>
+          </div>
+          <div className="obs-card-body" {...evSwipe}>
+            {events ? (
+              <>
+                {evPage === 0 ? (
+                  <>
+                    {events.events.map((ev, i) => (
+                      <div className="obs-row obs-pass" key={ev.id} onClick={e => { e.stopPropagation(); setEvPage(i + 1); }}>
+                        <span className="k">{ev.dateLabel}</span>
+                        <span className={`v ${ev.daysAway <= 2 ? 'hot' : ''}`}>{ev.title} · {ev.daysAway === 0 ? 'TODAY' : `${ev.daysAway}d`} ▸</span>
+                      </div>
+                    ))}
+                    <span className="obs-tag">COMPUTED FOR YOUR LOCATION</span>
+                  </>
+                ) : (() => { const ev = events.events[evPage - 1]; return (
+                  <>
+                    <div className="obs-ev-date">{ev.dateLabel}{ev.daysAway === 0 ? ' · TODAY' : ` · IN ${ev.daysAway} DAYS`}</div>
+                    <div className="obs-ev-title">{ev.title}</div>
+                    <span className="obs-tag">{ev.type}</span>
+                    <div className="obs-row"><span className="k">WINDOW</span><span className="v">{ev.window}</span></div>
+                    <div className="obs-row"><span className="k">DETAILS</span><span className="v">{ev.stat}</span></div>
+                    <div className="obs-row"><span className="k">VIEWING</span><span className="v">{ev.best}</span></div>
+                    <p className="obs-ev-blurb">{ev.blurb}</p>
+                  </>
+                ); })()}
+                <div className="obs-dots">
+                  {Array.from({ length: evMax + 1 }, (_, i) => (
+                    <i key={i} className={evPage === i ? 'on' : ''} onClick={e => { e.stopPropagation(); setEvPage(i); }} />
+                  ))}
+                </div>
+              </>
+            ) : <div className="obs-empty">COMPUTING EPHEMERIDES…</div>}
+          </div>
+        </div>
 
         <div className={openCls('aurora')}>
           <div className="obs-card-head" onClick={() => toggle('aurora')}>
@@ -428,7 +484,7 @@ export default function TonightPage() {
       {open && !isDesktop && (
         <div className="obs-pile" onClick={() => setOpen('')}>
           <i /><i /><i />
-          <span>▤ 5 MORE CARDS — TAP TO RETURN</span>
+          <span>▤ 6 MORE CARDS — TAP TO RETURN</span>
         </div>
       )}
 
