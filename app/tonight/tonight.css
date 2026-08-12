@@ -70,8 +70,9 @@
 @media (max-width: 899px) {
   .obs-stack.has-open {
     display: flex; flex-direction: column;
-    min-height: calc(100dvh - 122px); /* header + status bar */
-    padding-bottom: 62px; /* clear the bottom pile */
+    /* header (~48) + status (~34) + stack top pad (16) + pile (~78) */
+    min-height: calc(100dvh - 98px);
+    padding-bottom: 82px; /* clear the bottom pile */
   }
   /* wallet mode: the open card owns the screen; the rest leave entirely */
   .obs-stack.has-open .obs-card:not(.open) { display: none; }
@@ -81,8 +82,7 @@
   }
   .obs-card.open .obs-card-body {
     flex: 1; max-height: none; overflow-y: auto;
-    display: flex; flex-direction: column; justify-content: space-evenly;
-    padding: 12px 20px 22px; font-size: 13px; line-height: 1.8;
+    padding: 14px 20px 22px; font-size: 13px; line-height: 1.8;
   }
   .obs-card.open .obs-row { padding: 5px 0; }
   .obs-card-head { cursor: pointer; }
@@ -123,15 +123,42 @@
 .obs-bar { height: 8px; border: 1px solid var(--hud-border); border-radius: 4px; margin: 6px 0 10px; overflow: hidden; }
 .obs-bar i { display: block; height: 100%; background: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
 
-.obs-graph { display: flex; align-items: flex-end; gap: 3px; height: 36px; margin: 8px 0; }
-.obs-graph i { flex: 1; background: rgba(255, 255, 255, 0.06); border-top: 2px solid var(--hud-green-faint); min-height: 2px; }
-.obs-graph i.clear { background: rgba(0, 255, 136, 0.12); border-top-color: var(--hud-green); }
+.obs-graph-title {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 9px; letter-spacing: 1px; color: var(--hud-green-faint); margin-top: 4px;
+}
+.obs-legend { display: flex; align-items: center; }
+.obs-legend i { display: inline-block; width: 7px; height: 7px; margin: 0 4px 0 10px; }
+.obs-legend i.lg-clear, .og-barwrap i.clear { background: var(--hud-green); }
+.obs-legend i.lg-part, .og-barwrap i.part { background: var(--hud-warning); opacity: 0.85; }
+.obs-legend i.lg-cloud, .og-barwrap i.cloud { background: var(--hud-green-faint); opacity: 0.4; }
+.obs-graph { display: flex; gap: 3px; margin: 6px 0 2px; }
+.og-col { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.og-barwrap {
+  height: 46px; display: flex; align-items: flex-end;
+  border-bottom: 1px solid var(--hud-border);
+}
+.og-barwrap i { width: 100%; min-height: 2px; }
+.og-barwrap i.clear { box-shadow: 0 0 6px rgba(0, 255, 136, 0.35); }
+.og-hr { font-size: 8px; color: var(--hud-green-faint); text-align: center; letter-spacing: 0; }
 
 .obs-tag {
   display: inline-block; border: 1px solid var(--hud-border); border-radius: 3px;
   padding: 1px 6px; font-size: 10px; color: var(--hud-green-faint); margin: 6px 6px 0 0;
 }
 .obs-empty { color: var(--hud-green-faint); padding: 8px 0; }
+
+/* ── ISS sky path ── */
+.obs-skypath { width: 100%; max-width: 300px; margin: 4px auto; display: block; }
+.obs-skypath .sp-card { fill: var(--hud-green-faint); font-size: 11px; font-family: inherit; letter-spacing: 1px; }
+.obs-skypath .sp-lbl { fill: var(--hud-green-mid); font-size: 9px; font-family: inherit; letter-spacing: 0.5px; }
+.obs-skypath .sp-peak { fill: var(--hud-amber); }
+.obs-swipe-hint {
+  text-align: center; font-size: 10px; letter-spacing: 2px;
+  color: var(--hud-green-dim); padding: 8px 0 2px; cursor: pointer;
+}
+.obs-pass.sel .k, .obs-pass.sel .v { color: var(--hud-green); }
+.obs-pass { cursor: pointer; }
 
 .obs-nav {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
@@ -153,25 +180,31 @@
   gap: 8px; pointer-events: none;
   animation: obs-splash-seq 1.2s ease forwards;
 }
-.obs-splash-mark { font-size: 44px; color: var(--hud-green); animation: obs-splash-spin 1.2s ease; }
+.obs-splash-logo { width: 128px; height: 128px; }
+.obs-splash-logo .sl-draw {
+  stroke: var(--hud-green-mid);
+  stroke-dasharray: 400; stroke-dashoffset: 400;
+  animation: sl-drawin 0.8s ease forwards;
+}
+.obs-splash-logo .sl-orbit { stroke: var(--hud-green-dim); animation-delay: 0.12s; }
+.obs-splash-logo .sl-ring { stroke: var(--hud-green-faint); animation-delay: 0.2s; }
+.obs-splash-logo .sl-tick { stroke: var(--hud-green-faint); opacity: 0; animation: sl-fadein 0.3s ease 0.5s forwards; }
+.obs-splash-logo .sl-sat { fill: var(--hud-green); opacity: 0; animation: sl-fadein 0.3s ease 0.6s forwards; }
 .obs-splash-title { font-size: 20px; font-weight: 700; letter-spacing: 6px; color: var(--hud-amber); }
 .obs-splash-sub { font-size: 11px; letter-spacing: 10px; color: var(--hud-green-faint); }
+@keyframes sl-drawin { to { stroke-dashoffset: 0; } }
+@keyframes sl-fadein { to { opacity: 1; } }
 @keyframes obs-splash-seq {
   0% { opacity: 0; }
-  15% { opacity: 1; }
-  75% { opacity: 1; }
+  10% { opacity: 1; }
+  80% { opacity: 1; }
   100% { opacity: 0; }
-}
-@keyframes obs-splash-spin {
-  0% { transform: rotate(0deg) scale(0.6); }
-  60% { transform: rotate(180deg) scale(1.15); }
-  100% { transform: rotate(180deg) scale(1); }
 }
 
 /* ── Bottom pile: hint that the rest of the stack is waiting ── */
 .obs-pile {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
-  padding: 26px 14px calc(12px + env(safe-area-inset-bottom));
+  padding: 30px 14px calc(26px + env(safe-area-inset-bottom));
   display: flex; justify-content: center; align-items: flex-end;
   cursor: pointer;
   background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.9) 55%);
@@ -181,12 +214,12 @@
   border: 1px solid var(--hud-border); border-bottom: none;
   border-radius: 12px 12px 0 0; background: #0b0b0b;
 }
-.obs-pile i:nth-child(1) { bottom: 16px; opacity: 0.35; transform: scale(0.92); }
-.obs-pile i:nth-child(2) { bottom: 10px; opacity: 0.6; transform: scale(0.96); }
-.obs-pile i:nth-child(3) { bottom: 4px; opacity: 0.9; }
+.obs-pile i:nth-child(1) { bottom: 30px; opacity: 0.35; transform: scale(0.92); }
+.obs-pile i:nth-child(2) { bottom: 24px; opacity: 0.6; transform: scale(0.96); }
+.obs-pile i:nth-child(3) { bottom: 18px; opacity: 0.9; }
 .obs-pile span {
   position: relative; z-index: 1; font-size: 10px; letter-spacing: 1.5px;
-  color: var(--hud-green-dim); padding-bottom: 10px;
+  color: var(--hud-green-dim); padding-bottom: 2px;
 }
 @media (min-width: 900px) { .obs-pile { display: none; } }
 

@@ -8,6 +8,8 @@ export interface Pass {
   startDir: string;
   endDir: string;
   durationMin: number;
+  /** az/el track sampled through the pass, for sky-path plotting */
+  points: Array<{ az: number; el: number }>;
 }
 
 export interface PassesData {
@@ -49,6 +51,7 @@ export async function fetchIssPasses(): Promise<PassesData> {
   const now = Date.now();
   let inPass = false;
   let passStart = 0, maxEl = 0, startDir = '', endDir = '';
+  let track: Array<{ az: number; el: number }> = [];
 
   for (let t = 0; t < 48 * 3600; t += stepSec) {
     const time = new Date(now + t * 1000);
@@ -58,18 +61,24 @@ export async function fetchIssPasses(): Promise<PassesData> {
     const ecf = satellite.eciToEcf(pv.position, gmst);
     const look = satellite.ecfToLookAngles(observerGd, ecf);
     const elDeg = (look.elevation * 180) / Math.PI;
+    const azDeg = ((look.azimuth * 180) / Math.PI + 360) % 360;
 
     if (elDeg > 10 && !inPass) {
       inPass = true;
       passStart = time.getTime();
       maxEl = elDeg;
       startDir = compass(look.azimuth);
-    } else if (inPass && elDeg > maxEl) {
-      maxEl = elDeg;
+      track = [{ az: Math.round(azDeg), el: Math.round(elDeg) }];
+    } else if (inPass) {
+      if (elDeg > maxEl) maxEl = elDeg;
+      track.push({ az: Math.round(azDeg), el: Math.round(elDeg) });
     }
     if (elDeg <= 10 && inPass) {
       inPass = false;
       endDir = compass(look.azimuth);
+      // downsample long tracks to ~24 points
+      const stride = Math.max(1, Math.ceil(track.length / 24));
+      const points = track.filter((_, i) => i % stride === 0 || i === track.length - 1);
       passes.push({
         start: fmtLocal(new Date(passStart)),
         end: fmtLocal(time),
@@ -77,6 +86,7 @@ export async function fetchIssPasses(): Promise<PassesData> {
         startDir,
         endDir,
         durationMin: Math.round((time.getTime() - passStart) / 60000),
+        points,
       });
       if (passes.length >= 6) break;
     }
