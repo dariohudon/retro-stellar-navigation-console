@@ -258,3 +258,4 @@
   .obs-card-body { max-height: none; opacity: 1; padding-bottom: 16px; overflow: visible; }
   .obs-nav { position: static; border-top: none; padding: 4px 0 18px; }
 }
+.obs-skypath .sp-danger { fill: var(--hud-danger); }

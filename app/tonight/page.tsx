@@ -55,6 +55,79 @@ function SkyPath({ pass }: { pass: PassesData['passes'][number] }) {
   );
 }
 
+function SkyDome({ planets, moon }: {
+  planets: TonightData['planets'];
+  moon: TonightData['moon'];
+}) {
+  const R = 118, C = 130;
+  const project = (az: number, el: number) => {
+    const r = (R * (90 - Math.max(0, el))) / 90;
+    const rad = (az * Math.PI) / 180;
+    return { x: C + r * Math.sin(rad), y: C - r * Math.cos(rad) };
+  };
+  const up = planets.filter(p => p.altitude > 0);
+  const moonUp = moon.altitude > 0;
+  return (
+    <svg viewBox="0 0 260 260" className="obs-skypath" aria-label="Sky right now">
+      <circle cx={C} cy={C} r={R} fill="none" stroke="var(--hud-border)" strokeWidth="1.5" />
+      <circle cx={C} cy={C} r={(R * 60) / 90} fill="none" stroke="var(--hud-border)" strokeWidth="0.75" strokeDasharray="3 5" />
+      <circle cx={C} cy={C} r={(R * 30) / 90} fill="none" stroke="var(--hud-border)" strokeWidth="0.75" strokeDasharray="3 5" />
+      <line x1={C} y1={C - R} x2={C} y2={C + R} stroke="var(--hud-border)" strokeWidth="0.5" strokeDasharray="2 6" />
+      <line x1={C - R} y1={C} x2={C + R} y2={C} stroke="var(--hud-border)" strokeWidth="0.5" strokeDasharray="2 6" />
+      <text x={C} y={16} textAnchor="middle" className="sp-card">N</text>
+      <text x={252} y={C + 4} textAnchor="middle" className="sp-card">E</text>
+      <text x={C} y={256} textAnchor="middle" className="sp-card">S</text>
+      <text x={8} y={C + 4} textAnchor="middle" className="sp-card">W</text>
+      {moonUp && (() => { const m = project(moon.azimuth, moon.altitude); return (
+        <g>
+          <circle cx={m.x} cy={m.y} r="5" fill="none" stroke="var(--hud-green)" strokeWidth="1.5" />
+          <text x={m.x} y={m.y - 10} textAnchor="middle" className="sp-lbl sp-peak">MOON {moon.illumination}%</text>
+        </g>
+      ); })()}
+      {up.map((p, i) => { const q = project(p.azimuth, p.altitude); return (
+        <g key={p.name}>
+          <circle cx={q.x} cy={q.y} r="3.5" fill="var(--hud-green-mid)" />
+          <text x={Math.min(Math.max(q.x, 12), 248)} y={i % 2 === 0 ? q.y + 15 : q.y - 9} textAnchor={q.x > 190 ? 'end' : q.x < 70 ? 'start' : 'middle'} className="sp-lbl">{p.name}</text>
+        </g>
+      ); })}
+      {up.length === 0 && !moonUp && (
+        <text x={C} y={C} textAnchor="middle" className="sp-lbl">NOTHING ABOVE HORIZON RIGHT NOW</text>
+      )}
+    </svg>
+  );
+}
+
+function NeoChart({ items }: { items: NeoItem[] }) {
+  const R = 118, C = 130;
+  const maxD = Math.max(2, ...items.map(n => n.missDistanceLunar)) * 1.15;
+  const scale = (d: number) => R * Math.sqrt(d / maxD);
+  const rMoon = scale(1);
+  return (
+    <svg viewBox="0 0 260 260" className="obs-skypath" aria-label="NEO miss distances">
+      <circle cx={C} cy={C} r={3.5} fill="var(--hud-green)" />
+      <text x={C} y={C + 15} textAnchor="middle" className="sp-lbl sp-peak">EARTH</text>
+      <circle cx={C} cy={C} r={rMoon} fill="none" stroke="var(--hud-green-dim)" strokeWidth="0.75" strokeDasharray="3 4" />
+      <text x={C + rMoon + 4} y={C - 4} className="sp-lbl">MOON · 1 LD</text>
+      <circle cx={C} cy={C} r={R} fill="none" stroke="var(--hud-border)" strokeWidth="1" />
+      <text x={C} y={14} textAnchor="middle" className="sp-card">{maxD.toFixed(0)} LD</text>
+      {items.map((n, i) => {
+        const ang = ((i * 360) / items.length + 30) * (Math.PI / 180);
+        const r = scale(Math.max(0.15, n.missDistanceLunar));
+        const x = C + r * Math.sin(ang), y = C - r * Math.cos(ang);
+        return (
+          <g key={n.name}>
+            <line x1={C} y1={C} x2={x} y2={y} stroke="var(--hud-border)" strokeWidth="0.4" strokeDasharray="1 4" />
+            <circle cx={x} cy={y} r="3" fill={n.isHazardous ? 'var(--hud-danger)' : 'var(--hud-green-mid)'} />
+            <text x={Math.min(Math.max(x, 12), 248)} y={y - 8} textAnchor={x > 190 ? 'end' : x < 70 ? 'start' : 'middle'} className={`sp-lbl${n.isHazardous ? ' sp-danger' : ''}`}>
+              {n.name.slice(0, 12)} · {n.missDistanceLunar.toFixed(1)}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 function useClock(tz: string) {
   const [now, setNow] = useState('');
   useEffect(() => {
@@ -113,6 +186,8 @@ export default function TonightPage() {
   const [theme, setTheme] = useState<'day' | 'green' | 'night'>('day');
   const [craft, setCraft] = useState<Array<{ name: string; distanceAU: number }> | null>(null);
   const [issView, setIssView] = useState<'list' | 'path'>('list');
+  const [skyView, setSkyView] = useState<0 | 1>(0);
+  const [neoView, setNeoView] = useState<0 | 1>(0);
   const [events, setEvents] = useState<EventsData | null>(null);
   const [evPage, setEvPage] = useState(0);
   const [issPass, setIssPass] = useState(0);
@@ -217,6 +292,25 @@ export default function TonightPage() {
     : darkPasses.some(p => p.maxElevation >= 25) && skyDot === 'green' ? 'green'
     : 'amber';
   const Dot = ({ c }: { c: DotColor }) => (c ? <i className={`obs-dot ${c}`} /> : null);
+
+  const pager = (view: 0 | 1, set: (v: 0 | 1) => void) => ({
+    swipe: {
+      onTouchStart: (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; },
+      onTouchEnd: (e: React.TouchEvent) => {
+        const dx = e.changedTouches[0].clientX - touchX.current;
+        if (dx < -40) set(1);
+        if (dx > 40) set(0);
+      },
+    },
+    dots: (
+      <div className="obs-dots">
+        <i className={view === 0 ? 'on' : ''} onClick={e => { e.stopPropagation(); set(0); }} />
+        <i className={view === 1 ? 'on' : ''} onClick={e => { e.stopPropagation(); set(1); }} />
+      </div>
+    ),
+  });
+  const skyPager = pager(skyView, v => setSkyView(v));
+  const neoPager = pager(neoView, v => setNeoView(v));
 
   const nextEvent = events?.events[0] ?? null;
   const evDot: DotColor = !nextEvent ? null : nextEvent.daysAway <= 2 ? 'green' : nextEvent.daysAway <= 7 ? 'amber' : null;
@@ -341,8 +435,15 @@ export default function TonightPage() {
             <div className="t">◑ TONIGHT&apos;S SKY</div>
             <div className="g"><span className="g-txt">{tonight ? `${tonight.planets.filter(p => p.visible).length} planets up · moon ${tonight.moon.illumination}%` : 'LOADING…'}</span><Dot c={skyDot} /></div>
           </div>
-          <div className="obs-card-body">
+          <div className="obs-card-body" {...skyPager.swipe}>
             {tonight ? (
+              skyView === 1 ? (
+                <>
+                  <div className="obs-row"><span className="k">SKY RIGHT NOW</span><span className="v">DOME VIEW · ZENITH AT CENTRE</span></div>
+                  <SkyDome planets={tonight.planets} moon={tonight.moon} />
+                  {skyPager.dots}
+                </>
+              ) : (
               <>
                 {tonight.planets.map(p => (
                   <div className="obs-row" key={p.name}>
@@ -358,7 +459,9 @@ export default function TonightPage() {
                   <div className="obs-row"><span className="k">METEORS</span><span className={`v ${tonight.nextShower.daysAway <= 2 ? 'warn' : ''}`}>{tonight.nextShower.name} · {tonight.nextShower.daysAway === 0 ? 'PEAKS TONIGHT' : `peak ${tonight.nextShower.peak} (${tonight.nextShower.daysAway}d)`}</span></div>
                 )}
                 <span className="obs-tag">ASTRONOMY-ENGINE · LOCAL</span>
+                {skyPager.dots}
               </>
+              )
             ) : <div className="obs-empty">COMPUTING EPHEMERIS…</div>}
           </div>
         </div>
@@ -440,16 +543,29 @@ export default function TonightPage() {
             <div className="t">◎ NEO WATCH</div>
             <div className="g">{neo ? `${neo.length} approaches 7d` : 'tap to load'}</div>
           </div>
-          <div className="obs-card-body">
+          <div className="obs-card-body" {...neoPager.swipe}>
             {neo ? (
-              neo.length > 0 ? neo.map((n, i) => (
-                <div className="obs-row" key={i}>
-                  <span className="k">{n.name}</span>
-                  <span className={`v ${n.isHazardous ? 'danger' : ''}`}>
-                    {n.missDistanceLunar ? `${n.missDistanceLunar.toFixed(1)} LD` : ''}{n.diameterM ? ` · ${Math.round(n.diameterM)} m` : ''}{n.closeApproachDate ? ` · ${n.closeApproachDate.slice(5)}` : ''}
-                  </span>
-                </div>
-              )) : <div className="obs-empty">NO CLOSE APPROACHES</div>
+              neo.length > 0 ? (
+                neoView === 1 ? (
+                  <>
+                    <div className="obs-row"><span className="k">MISS DISTANCE MAP</span><span className="v">RADIUS = CLOSEST APPROACH</span></div>
+                    <NeoChart items={neo} />
+                    {neoPager.dots}
+                  </>
+                ) : (
+                  <>
+                    {neo.map((n, i) => (
+                      <div className="obs-row" key={i}>
+                        <span className="k">{n.name}</span>
+                        <span className={`v ${n.isHazardous ? 'danger' : ''}`}>
+                          {n.missDistanceLunar ? `${n.missDistanceLunar.toFixed(1)} LD` : ''}{n.diameterM ? ` · ${Math.round(n.diameterM)} m` : ''}{n.closeApproachDate ? ` · ${n.closeApproachDate.slice(5)}` : ''}
+                        </span>
+                      </div>
+                    ))}
+                    {neoPager.dots}
+                  </>
+                )
+              ) : <div className="obs-empty">NO CLOSE APPROACHES</div>
             ) : <div className="obs-empty">QUERYING NEOWS…</div>}
           </div>
         </div>

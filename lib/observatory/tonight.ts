@@ -8,6 +8,7 @@ export interface PlanetInfo {
   name: string;
   visible: boolean;
   altitude: number;
+  azimuth: number;
   azimuthCompass: string;
   rise: string | null;
   set: string | null;
@@ -17,7 +18,7 @@ export interface PlanetInfo {
 export interface TonightData {
   darknessStart: string | null;
   darknessEnd: string | null;
-  moon: { illumination: number; phaseName: string; rise: string | null; set: string | null };
+  moon: { illumination: number; phaseName: string; rise: string | null; set: string | null; altitude: number; azimuth: number };
   planets: PlanetInfo[];
   nextShower: { name: string; peak: string; daysAway: number } | null;
   fetchedAt: string;
@@ -64,6 +65,8 @@ export function computeTonight(lat = SITE.lat, lon = SITE.lon, tz = SITE.timezon
   const dawnEvent = duskEvent ? SearchAltitude(Body.Sun, obs, +1, duskEvent.date, 2, -18) : null;
 
   const moonIllum = Illumination(Body.Moon, now);
+  const moonEq = Equator(Body.Moon, now, obs, true, true);
+  const moonHor = Horizon(now, obs, moonEq.ra, moonEq.dec, 'normal');
   const moonRise = SearchRiseSet(Body.Moon, obs, +1, now, 1.5);
   const moonSet = SearchRiseSet(Body.Moon, obs, -1, now, 1.5);
 
@@ -78,6 +81,7 @@ export function computeTonight(lat = SITE.lat, lon = SITE.lon, tz = SITE.timezon
       name: body.toString().toUpperCase(),
       visible: hor.altitude > 5,
       altitude: Math.round(hor.altitude),
+      azimuth: Math.round(hor.azimuth),
       azimuthCompass: compass(hor.azimuth),
       rise: fmtLocal(rise ? rise.date : null, tz),
       set: fmtLocal(set ? set.date : null, tz),
@@ -114,6 +118,8 @@ export function computeTonight(lat = SITE.lat, lon = SITE.lon, tz = SITE.timezon
       phaseName: phaseName(MoonPhase(now)),
       rise: fmtLocal(moonRise ? moonRise.date : null, tz),
       set: fmtLocal(moonSet ? moonSet.date : null, tz),
+      altitude: Math.round(moonHor.altitude),
+      azimuth: Math.round(moonHor.azimuth),
     },
     planets,
     nextShower,
