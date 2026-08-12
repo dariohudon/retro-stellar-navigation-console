@@ -346,7 +346,7 @@ export default function TonightPage() {
   const [splash, setSplash] = useState(true);
 
   useEffect(() => {
-    const t = setTimeout(() => setSplash(false), 1200);
+    const t = setTimeout(() => setSplash(false), 2000);
     return () => clearTimeout(t);
   }, []);
 
