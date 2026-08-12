@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { PLANETS, Planet } from "@/data/planets";
 import { CELESTIAL_OBJECTS, CelestialObject } from "@/data/celestialObjects";
@@ -65,6 +65,14 @@ function modeBtn(active: boolean, isGreen = false): React.CSSProperties {
 }
 
 export default function Home() {
+  // ── Small screens get the Observatory card view (?desktop=1 to override) ──
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (window.innerWidth < 900 && params.get("desktop") !== "1") {
+      window.location.replace("/tonight");
+    }
+  }, []);
+
   // ── Planet/object/sector selection ───────────────────────────────────────
   const [selectedPlanet,     setSelectedPlanet]     = useState<Planet | null>(null);
   const [selectedObject,     setSelectedObject]     = useState<CelestialObject | null>(null);

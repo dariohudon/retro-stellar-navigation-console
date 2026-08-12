@@ -1,0 +1,244 @@
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import './tonight.css';
+import type { AuroraData } from '@/lib/observatory/aurora';
+import type { ConditionsData } from '@/lib/observatory/conditions';
+import type { TonightData } from '@/lib/observatory/tonight';
+import type { PassesData } from '@/lib/observatory/passes';
+
+interface NeoItem {
+  name: string;
+  isHazardous: boolean;
+  missDistanceLunar: number;
+  diameterM: number;
+  closeApproachDate: string;
+}
+
+function useClock() {
+  const [now, setNow] = useState('');
+  useEffect(() => {
+    const tick = () =>
+      setNow(new Date().toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Edmonton' }));
+    tick();
+    const id = setInterval(tick, 30000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+export default function TonightPage() {
+  const clock = useClock();
+  const [open, setOpen] = useState<string>('aurora');
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [aurora, setAurora] = useState<AuroraData | null>(null);
+  const [conditions, setConditions] = useState<ConditionsData | null>(null);
+  const [tonight, setTonight] = useState<TonightData | null>(null);
+  const [passes, setPasses] = useState<PassesData | null>(null);
+  const [neo, setNeo] = useState<NeoItem[] | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 900px)');
+    const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/aurora').then(r => r.json()).then(d => !d.error && setAurora(d)).catch(() => {});
+    fetch('/api/conditions').then(r => r.json()).then(d => !d.error && setConditions(d)).catch(() => {});
+    fetch('/api/tonight').then(r => r.json()).then(d => !d.error && setTonight(d)).catch(() => {});
+  }, []);
+
+  const loadPasses = useCallback(() => {
+    if (!passes) fetch('/api/passes').then(r => r.json()).then(d => !d.error && setPasses(d)).catch(() => {});
+  }, [passes]);
+
+  const loadNeo = useCallback(() => {
+    if (!neo)
+      fetch('/api/neo?days=7')
+        .then(r => r.json())
+        .then(d => {
+          interface RawNeo {
+            name: string; isPotentiallyHazardous: boolean; missDistanceLunar: number;
+            diameterMinKm: number; diameterMaxKm: number; closeApproachDate: string;
+          }
+          const objs: RawNeo[] = d.objects ?? [];
+          const items = objs
+            .sort((a, b) => a.missDistanceLunar - b.missDistanceLunar)
+            .slice(0, 5)
+            .map(o => ({
+              name: o.name.replace(/[()]/g, ''),
+              isHazardous: o.isPotentiallyHazardous,
+              missDistanceLunar: o.missDistanceLunar,
+              diameterM: Math.round(((o.diameterMinKm + o.diameterMaxKm) / 2) * 1000),
+              closeApproachDate: o.closeApproachDate,
+            }));
+          setNeo(items);
+        })
+        .catch(() => setNeo([]));
+  }, [neo]);
+
+  useEffect(() => {
+    if (isDesktop) { loadPasses(); loadNeo(); }
+  }, [isDesktop, loadPasses, loadNeo]);
+
+  const toggle = (id: string) => {
+    if (isDesktop) return;
+    const next = open === id ? '' : id;
+    setOpen(next);
+    if (next === 'passes') loadPasses();
+    if (next === 'neo') loadNeo();
+  };
+
+  const openCls = (id: string) => `obs-card${open === id || isDesktop ? ' open' : ''}`;
+
+  return (
+    <div className="obs-root">
+      <header className="obs-header">
+        <h1>⟨ OBSERVATORY ⟩</h1>
+        <div className="obs-loc">51.04°N 114.07°W · {clock} MT</div>
+      </header>
+
+      <div className="obs-status">
+        <div>KP <b className={aurora && aurora.kpNow >= 4 ? 'hot' : ''}>{aurora ? aurora.kpNow.toFixed(1) : '—'}</b></div>
+        <div>CLOUD <b>{conditions ? `${conditions.cloudNow.total}%` : '—'}</b></div>
+        <div>MOON <b>{tonight ? `${tonight.moon.illumination}%` : '—'}</b></div>
+        <div>DARK <b>{tonight && tonight.darknessStart ? `${tonight.darknessStart}–${tonight.darknessEnd ?? '…'}` : '—'}</b></div>
+      </div>
+
+      <div className="obs-stack">
+
+        <div className={openCls('aurora')} onClick={() => toggle('aurora')}>
+          <div className="obs-card-head">
+            <div className="t">▲ AURORA WATCH</div>
+            <div className="g">{aurora ? <span className={aurora.kpNow >= 4 ? 'hot' : ''}>KP {aurora.kpNow.toFixed(1)} · {aurora.stormLevel}</span> : 'LOADING…'}</div>
+          </div>
+          <div className="obs-card-body">
+            {aurora ? (
+              <>
+                <div className="obs-row"><span className="k">STATUS</span><span className={`v ${aurora.kpNow >= 5 ? 'hot' : ''}`}>{aurora.stormLevel}</span></div>
+                <div className="obs-row"><span className="k">VISIBILITY @ 51°N</span><span className={`v ${aurora.kpNow >= 4 ? 'hot' : ''}`}>{aurora.visibility}</span></div>
+                <div className="obs-bar"><i style={{ width: `${Math.min(100, (Math.max(aurora.kpNow, aurora.kpMax24h) / 9) * 100)}%` }} /></div>
+                <div className="obs-row"><span className="k">KP FORECAST MAX 24H</span><span className="v">{aurora.kpMax24h.toFixed(1)}</span></div>
+                <div className="obs-row"><span className="k">BZ</span><span className="v">{aurora.bz !== null ? `${aurora.bz} nT ${aurora.bz <= -5 ? '(favourable)' : ''}` : 'n/a'}</span></div>
+                <div className="obs-row"><span className="k">SOLAR WIND</span><span className="v">{aurora.windSpeed !== null ? `${Math.round(aurora.windSpeed)} km/s` : 'n/a'}</span></div>
+                <span className="obs-tag">NOAA SWPC</span>
+              </>
+            ) : <div className="obs-empty">ACQUIRING SPACE WEATHER…</div>}
+          </div>
+        </div>
+
+        <div className={openCls('sky')} onClick={() => toggle('sky')}>
+          <div className="obs-card-head">
+            <div className="t">◑ TONIGHT&apos;S SKY</div>
+            <div className="g">{tonight ? `${tonight.planets.filter(p => p.visible).length} planets up · moon ${tonight.moon.illumination}%` : 'LOADING…'}</div>
+          </div>
+          <div className="obs-card-body">
+            {tonight ? (
+              <>
+                {tonight.planets.map(p => (
+                  <div className="obs-row" key={p.name}>
+                    <span className="k">{p.name}</span>
+                    <span className={`v ${p.visible ? '' : ''}`}>
+                      {p.visible ? `UP · ${p.azimuthCompass} ${p.altitude}°` : p.rise ? `rises ${p.rise}` : 'below horizon'}
+                      {` · mag ${p.magnitude}`}
+                    </span>
+                  </div>
+                ))}
+                <div className="obs-row"><span className="k">MOON</span><span className="v">{tonight.moon.phaseName} {tonight.moon.illumination}%{tonight.moon.rise ? ` · rise ${tonight.moon.rise}` : ''}{tonight.moon.set ? ` · set ${tonight.moon.set}` : ''}</span></div>
+                {tonight.nextShower && (
+                  <div className="obs-row"><span className="k">METEORS</span><span className={`v ${tonight.nextShower.daysAway <= 2 ? 'warn' : ''}`}>{tonight.nextShower.name} · {tonight.nextShower.daysAway === 0 ? 'PEAKS TONIGHT' : `peak ${tonight.nextShower.peak} (${tonight.nextShower.daysAway}d)`}</span></div>
+                )}
+                <span className="obs-tag">ASTRONOMY-ENGINE · LOCAL</span>
+              </>
+            ) : <div className="obs-empty">COMPUTING EPHEMERIS…</div>}
+          </div>
+        </div>
+
+        <div className={openCls('conditions')} onClick={() => toggle('conditions')}>
+          <div className="obs-card-head">
+            <div className="t">☁ CONDITIONS</div>
+            <div className="g">{conditions ? <span className={conditions.score >= 7 ? 'hot' : ''}>{conditions.summary} · {conditions.score}/10</span> : 'LOADING…'}</div>
+          </div>
+          <div className="obs-card-body">
+            {conditions ? (
+              <>
+                <div className="obs-graph">
+                  {conditions.hourly.map(h => (
+                    <i key={h.time} className={h.cloud <= 30 ? 'clear' : ''} style={{ height: `${Math.max(6, h.cloud)}%` }} title={`${h.time} ${h.cloud}%`} />
+                  ))}
+                </div>
+                <div className="obs-row"><span className="k">CLOUD L / M / H</span><span className="v">{conditions.cloudNow.low}% / {conditions.cloudNow.mid}% / {conditions.cloudNow.high}%</span></div>
+                <div className="obs-row"><span className="k">TEMP / DEW</span><span className="v">{Math.round(conditions.temperature)}°C / {Math.round(conditions.dewPoint)}°C</span></div>
+                <div className="obs-row"><span className="k">WIND</span><span className="v">{Math.round(conditions.windSpeed)} km/h</span></div>
+                <div className="obs-row"><span className="k">SITE</span><span className="v">CALGARY · BORTLE 7</span></div>
+                <span className="obs-tag">OPEN-METEO</span>
+              </>
+            ) : <div className="obs-empty">FETCHING FORECAST…</div>}
+          </div>
+        </div>
+
+        <div className={openCls('passes')} onClick={() => toggle('passes')}>
+          <div className="obs-card-head">
+            <div className="t">✦ ISS PASSES</div>
+            <div className="g">{passes ? `${passes.passes.length} in 48h` : 'tap to compute'}</div>
+          </div>
+          <div className="obs-card-body">
+            {passes ? (
+              passes.passes.length > 0 ? (
+                <>
+                  {passes.passes.map((p, i) => (
+                    <div className="obs-row" key={i}>
+                      <span className="k">{p.start}</span>
+                      <span className="v">{p.startDir}→{p.endDir} · max {p.maxElevation}° · {p.durationMin} min</span>
+                    </div>
+                  ))}
+                  <span className="obs-tag">CELESTRAK TLE · COMPUTED LOCAL</span>
+                </>
+              ) : <div className="obs-empty">NO PASSES ABOVE 10° IN NEXT 48H</div>
+            ) : <div className="obs-empty">PROPAGATING ORBIT…</div>}
+          </div>
+        </div>
+
+        <div className={openCls('neo')} onClick={() => toggle('neo')}>
+          <div className="obs-card-head">
+            <div className="t">◎ NEO WATCH</div>
+            <div className="g">{neo ? `${neo.length} approaches 7d` : 'tap to load'}</div>
+          </div>
+          <div className="obs-card-body">
+            {neo ? (
+              neo.length > 0 ? neo.map((n, i) => (
+                <div className="obs-row" key={i}>
+                  <span className="k">{n.name}</span>
+                  <span className={`v ${n.isHazardous ? 'danger' : ''}`}>
+                    {n.missDistanceLunar ? `${n.missDistanceLunar.toFixed(1)} LD` : ''}{n.diameterM ? ` · ${Math.round(n.diameterM)} m` : ''}{n.closeApproachDate ? ` · ${n.closeApproachDate.slice(5)}` : ''}
+                  </span>
+                </div>
+              )) : <div className="obs-empty">NO CLOSE APPROACHES</div>
+            ) : <div className="obs-empty">QUERYING NEOWS…</div>}
+          </div>
+        </div>
+
+        <div className={openCls('map')} onClick={() => { if (!isDesktop && open !== 'map') { toggle('map'); return; } window.location.href = '/?desktop=1'; }}>
+          <div className="obs-card-head">
+            <div className="t">✷ SOLAR MAP</div>
+            <div className="g">open navigation console →</div>
+          </div>
+          <div className="obs-card-body">
+            <div className="obs-row"><span className="k">MODE</span><span className="v">LIVE EPHEMERIS · JPL HORIZONS</span></div>
+            <div className="obs-row"><span className="k">ASSETS</span><span className="v">VGR1 · VGR2 · NH · PSP</span></div>
+            <div className="obs-row"><span className="k">TAP AGAIN</span><span className="v hot">LAUNCH FULL CONSOLE</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <nav className="obs-nav">
+        <a className="active" href="/tonight"><span>▤</span>TONIGHT</a>
+        <a href="/?desktop=1"><span>✷</span>CONSOLE</a>
+      </nav>
+    </div>
+  );
+}
