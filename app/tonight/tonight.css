@@ -279,7 +279,7 @@
 .obs-pull-spin { color: var(--hud-green); animation: obs-pulse 0.9s ease infinite; }
 @keyframes obs-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 .obs-section {
-  font-size: 17px; font-weight: 700; letter-spacing: 3.5px; color: var(--hud-amber);
+  font-size: 21px; font-weight: 700; letter-spacing: 3px; color: var(--hud-amber);
   text-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
   padding: 42px 6px 13px; position: relative; z-index: 2;
 }
