@@ -270,3 +270,15 @@
 }
 .obs-pull-spin { color: var(--hud-green); animation: obs-pulse 0.9s ease infinite; }
 @keyframes obs-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.obs-section {
+  font-size: 9px; letter-spacing: 3px; color: var(--hud-green-faint);
+  padding: 18px 6px 8px; position: relative; z-index: 2;
+}
+.obs-section + .obs-card { margin-top: 0 !important; }
+.obs-stack .obs-card + .obs-section { margin-top: 6px; }
+@media (max-width: 899px) {
+  .obs-stack.has-open .obs-section { display: none; }
+}
+@media (min-width: 900px) {
+  .obs-section { grid-column: 1 / -1; padding: 6px 2px 0; }
+}

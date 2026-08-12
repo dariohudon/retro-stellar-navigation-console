@@ -10,6 +10,8 @@ import type { EventsData } from '@/lib/observatory/events';
 import type { MissionsData } from '@/lib/observatory/missions';
 import type { LightPollutionData } from '@/lib/observatory/lightpollution';
 import type { CrewData } from '@/lib/observatory/crew';
+import type { SolarData } from '@/lib/observatory/solar';
+import type { TargetsData } from '@/lib/observatory/targets';
 
 interface NeoItem {
   name: string;
@@ -294,6 +296,10 @@ export default function TonightPage() {
   const [craft, setCraft] = useState<Array<{ name: string; distanceAU: number }> | null>(null);
   const [issView, setIssView] = useState(0); // 0 list · 1 sky path · 2 crew
   const [crew, setCrew] = useState<CrewData | null>(null);
+  const [solar, setSolar] = useState<SolarData | null>(null);
+  const [solarView, setSolarView] = useState<0 | 1>(0);
+  const [targets, setTargets] = useState<TargetsData | null>(null);
+  const [tgtView, setTgtView] = useState<0 | 1>(0);
   const [skyView, setSkyView] = useState<0 | 1>(0);
   const [neoView, setNeoView] = useState<0 | 1>(0);
   const [auroraView, setAuroraView] = useState<0 | 1>(0);
@@ -349,6 +355,8 @@ export default function TonightPage() {
     fetch('/api/missions').then(r => r.json()).then(d => !d.error && setMissions(d)).catch(() => {});
     fetch('/api/lightpollution' + qs).then(r => r.json()).then(d => !d.error && setLight(d)).catch(() => {});
     fetch('/api/crew').then(r => r.json()).then(d => !d.error && setCrew(d)).catch(() => {});
+    fetch('/api/solar').then(r => r.json()).then(d => !d.error && setSolar(d)).catch(() => {});
+    fetch('/api/targets' + qs).then(r => r.json()).then(d => !d.error && setTargets(d)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qs]);
 
@@ -402,6 +410,8 @@ export default function TonightPage() {
       else if (id === 'events') { const d = await j('/api/events' + qs); if (!d.error) setEvents(d); }
       else if (id === 'missions') { const d = await j('/api/missions'); if (!d.error) setMissions(d); }
       else if (id === 'light') { const d = await j('/api/lightpollution' + qs); if (!d.error) setLight(d); }
+      else if (id === 'solar') { const d = await j('/api/solar'); if (!d.error) setSolar(d); }
+      else if (id === 'targets') { const d = await j('/api/targets' + qs); if (!d.error) setTargets(d); }
       else if (id === 'neo') await fetchNeo();
       else if (id === 'map') await fetchCraft();
     } catch { /* keep old data */ }
@@ -499,9 +509,12 @@ export default function TonightPage() {
   const neoPager = pager(neoView, v => setNeoView(v));
   const auroraPager = pager(auroraView, v => setAuroraView(v));
   const lightPager = pager(lightView, v => setLightView(v));
+  const solarPager = pager(solarView, v => setSolarView(v));
+  const tgtPager = pager(tgtView, v => setTgtView(v));
   const craftPager = pager(craftView, v => setCraftView(v));
 
   const lightDot: DotColor = !light ? null : light.bortle <= 4 ? 'green' : light.bortle <= 6 ? 'amber' : 'red';
+  const tgtDot: DotColor = !targets ? null : targets.picks.filter(p => p.visibleHere).length >= 3 ? 'green' : targets.picks.length > 0 ? 'amber' : 'red';
   const nextEvent = events?.events[0] ?? null;
   const evDot: DotColor = !nextEvent ? null : nextEvent.daysAway <= 2 ? 'green' : nextEvent.daysAway <= 7 ? 'amber' : null;
   const evCount = events ? events.events.length : 0;
@@ -568,6 +581,8 @@ export default function TonightPage() {
           </div>
         )}
 
+        <div className="obs-section">// THE SKY</div>
+
         <div className={openCls('events')}>
           <div className="obs-card-head" onClick={() => toggle('events')}>
             <div className="t">☄ EVENTS</div>
@@ -607,39 +622,6 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className={openCls('conditions')}>
-          <div className="obs-card-head" onClick={() => toggle('conditions')}>
-            <div className="t">☁ WEATHER CONDITIONS</div>
-            <div className="g"><span className="g-txt">{conditions ? <span className={conditions.score >= 7 ? 'hot' : ''}>{conditions.summary} · {conditions.score}/10</span> : 'LOADING…'}</span><Dot c={skyDot} /></div>
-          </div>
-          <div className="obs-card-body">
-            {conditions ? (
-              <>
-                <div className="obs-graph-title">
-                  <span>SKY CLARITY · NEXT 12H</span>
-                  <span className="obs-legend"><i className="lg-clear" />CLEAR<i className="lg-part" />PARTLY<i className="lg-cloud" />CLOUDY</span>
-                </div>
-                <div className="obs-graph">
-                  {conditions.hourly.map((h, i) => {
-                    const cls = h.cloud <= 25 ? 'clear' : h.cloud <= 60 ? 'part' : 'cloud';
-                    return (
-                      <div className="og-col" key={h.time}>
-                        <div className="og-barwrap"><i className={cls} style={{ height: `${Math.max(4, 100 - h.cloud)}%` }} /></div>
-                        <span className="og-hr">{i % 2 === 0 ? h.time.slice(0, 2) : ''}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="obs-row"><span className="k">CLOUD L / M / H</span><span className="v">{conditions.cloudNow.low}% / {conditions.cloudNow.mid}% / {conditions.cloudNow.high}%</span></div>
-                <div className="obs-row"><span className="k">TEMP / DEW</span><span className="v">{Math.round(conditions.temperature)}°C / {Math.round(conditions.dewPoint)}°C</span></div>
-                <div className="obs-row"><span className="k">WIND</span><span className="v">{Math.round(conditions.windSpeed)} km/h</span></div>
-                <div className="obs-row"><span className="k">SITE</span><span className="v">{loc.source === 'gps' ? `${Math.abs(loc.lat).toFixed(2)}°${loc.lat >= 0 ? 'N' : 'S'} ${Math.abs(loc.lon).toFixed(2)}°${loc.lon >= 0 ? 'E' : 'W'} · LOCAL` : 'CALGARY · DEFAULT'}</span></div>
-                <span className="obs-tag">OPEN-METEO</span>
-              </>
-            ) : <div className="obs-empty">FETCHING FORECAST…</div>}
-          </div>
-        </div>
-
         <div className={openCls('sky')}>
           <div className="obs-card-head" onClick={() => toggle('sky')}>
             <div className="t">◑ TONIGHT&apos;S SKY</div>
@@ -676,63 +658,38 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className={openCls('aurora')}>
-          <div className="obs-card-head" onClick={() => toggle('aurora')}>
-            <div className="t">▲ AURORA WATCH</div>
-            <div className="g"><span className="g-txt">{aurora ? <span className={aurora.kpNow >= 4 ? 'hot' : ''}>KP {aurora.kpNow.toFixed(1)} · {aurora.stormLevel}</span> : 'LOADING…'}</span><Dot c={auroraDot} /></div>
+        <div className={openCls('targets')}>
+          <div className="obs-card-head" onClick={() => toggle('targets')}>
+            <div className="t">⌖ TONIGHT&apos;S TARGETS</div>
+            <div className="g"><span className="g-txt">{targets ? `${targets.picks.filter(p => p.visibleHere).length} CITY-PROOF · ${targets.picks.length} PICKS` : 'LOADING…'}</span><Dot c={tgtDot} /></div>
           </div>
-          <div className="obs-card-body" {...auroraPager.swipe}>
-            {aurora ? (
-              auroraView === 1 ? (
+          <div className="obs-card-body" {...tgtPager.swipe}>
+            {targets ? (
+              tgtView === 1 ? (
                 <>
-                  <div className="obs-row"><span className="k">KP FORECAST · NEXT 24H</span><span className="v">3-HOUR BLOCKS</span></div>
-                  <KpChart forecast={aurora.forecast} needed={aurora.neededKp} tz={tz} />
-                  <span className="obs-tag">NOAA SWPC FORECAST</span>
-                  {auroraPager.dots}
-                </>
-              ) : (
-              <>
-                <div className="obs-row"><span className="k">STATUS</span><span className={`v ${aurora.kpNow >= 5 ? 'hot' : ''}`}>{aurora.stormLevel}</span></div>
-                <div className="obs-row"><span className="k">VISIBILITY @ {Math.abs(loc.lat).toFixed(0)}°{loc.lat >= 0 ? 'N' : 'S'}</span><span className={`v ${aurora.kpNow >= 4 ? 'hot' : ''}`}>{aurora.visibility}</span></div>
-                <div className="obs-bar"><i style={{ width: `${Math.min(100, (Math.max(aurora.kpNow, aurora.kpMax24h) / 9) * 100)}%` }} /></div>
-                <div className="obs-row"><span className="k">KP FORECAST MAX 24H</span><span className="v">{aurora.kpMax24h.toFixed(1)}</span></div>
-                <div className="obs-row"><span className="k">BZ</span><span className="v">{aurora.bz !== null ? `${aurora.bz} nT ${aurora.bz <= -5 ? '(favourable)' : ''}` : 'n/a'}</span></div>
-                <div className="obs-row"><span className="k">SOLAR WIND</span><span className="v">{aurora.windSpeed !== null ? `${Math.round(aurora.windSpeed)} km/s` : 'n/a'}</span></div>
-                <span className="obs-tag">NOAA SWPC</span>
-                {auroraPager.dots}
-              </>
-              )
-            ) : <div className="obs-empty">ACQUIRING SPACE WEATHER…</div>}
-          </div>
-        </div>
-
-        <div className={openCls('light')}>
-          <div className="obs-card-head" onClick={() => toggle('light')}>
-            <div className="t">◍ LIGHT POLLUTION</div>
-            <div className="g"><span className="g-txt">{light ? `BORTLE ${light.bortle} · SQM ${light.sqm.toFixed(1)}` : 'LOADING…'}</span><Dot c={lightDot} /></div>
-          </div>
-          <div className="obs-card-body" {...lightPager.swipe}>
-            {light ? (
-              lightView === 1 ? (
-                <>
-                  <div className="obs-row"><span className="k">DARK SKY FINDER</span><span className="v">RINGS AT {light.rings.join(' / ')} KM</span></div>
-                  <EscapeMap lp={light} />
-                  {light.nearestDark
-                    ? <div className="obs-row"><span className="k">NEAREST DARK SKY</span><span className="v hot">BORTLE {light.nearestDark.bortle} · {light.nearestDark.km} KM {light.nearestDark.dir}</span></div>
-                    : <div className="obs-row"><span className="k">NEAREST DARK SKY</span><span className="v">{light.bortle <= 4 ? 'YOU ARE IN ONE' : 'NONE WITHIN 150 KM'}</span></div>}
-                  {lightPager.dots}
+                  <div className="obs-row"><span className="k">TARGET DOME</span><span className="v">POSITIONS AT BEST TIME</span></div>
+                  <SkyDome
+                    planets={targets.picks.slice(0, 8).map(p => ({ name: p.id, visible: true, altitude: p.altitude, azimuth: p.azimuth, azimuthCompass: p.azCompass, rise: null, set: null, magnitude: p.mag }))}
+                    moon={{ illumination: targets.moonIllumination, phaseName: '', rise: null, set: null, altitude: -90, azimuth: 0 }}
+                  />
+                  {tgtPager.dots}
                 </>
               ) : (
                 <>
-                  <BortleScale bortle={light.bortle} />
-                  <div className="obs-row"><span className="k">CLASS {light.bortle}</span><span className="v">{light.label}</span></div>
-                  <div className="obs-row"><span className="k">SKY BRIGHTNESS</span><span className="v">SQM {light.sqm.toFixed(2)} MAG/ARCSEC²</span></div>
-                  <div className="obs-row"><span className="k">VS NATURAL SKY</span><span className="v">{light.ratio < 1 ? `${Math.round(light.ratio * 100)}% BRIGHTER` : `${(light.ratio + 1).toFixed(1)}× BRIGHTER`}</span></div>
-                  <span className="obs-tag">LORENZ ATLAS 2025 · VIIRS</span>
-                  {lightPager.dots}
+                  <div className="obs-row"><span className="k">WINDOW {targets.windowStart}–{targets.windowEnd}</span><span className="v">MOON {targets.moonIllumination}%{targets.bortle ? ` · BORTLE ${targets.bortle}` : ''}</span></div>
+                  {targets.picks.map(p => (
+                    <div className="obs-row" key={p.id}>
+                      <span className="k">{p.id}</span>
+                      <span className={`v ${p.visibleHere ? '' : 'faded'}`}>
+                        {p.name} · {p.azCompass} {p.altitude}° @ {p.bestTime}{p.visibleHere ? '' : ' · NEEDS DARK SITE'}{p.moonWarning ? ' ☾' : ''}
+                      </span>
+                    </div>
+                  ))}
+                  <span className="obs-tag">☾ = MOONLIGHT INTERFERES</span>
+                  {tgtPager.dots}
                 </>
               )
-            ) : <div className="obs-empty">READING ATLAS…</div>}
+            ) : <div className="obs-empty">PLANNING OBSERVATIONS…</div>}
           </div>
         </div>
 
@@ -826,6 +783,136 @@ export default function TonightPage() {
           </div>
         </div>
 
+        <div className="obs-section">// CAN I OBSERVE?</div>
+
+        <div className={openCls('conditions')}>
+          <div className="obs-card-head" onClick={() => toggle('conditions')}>
+            <div className="t">☁ WEATHER CONDITIONS</div>
+            <div className="g"><span className="g-txt">{conditions ? <span className={conditions.score >= 7 ? 'hot' : ''}>{conditions.summary} · {conditions.score}/10</span> : 'LOADING…'}</span><Dot c={skyDot} /></div>
+          </div>
+          <div className="obs-card-body">
+            {conditions ? (
+              <>
+                <div className="obs-graph-title">
+                  <span>SKY CLARITY · NEXT 12H</span>
+                  <span className="obs-legend"><i className="lg-clear" />CLEAR<i className="lg-part" />PARTLY<i className="lg-cloud" />CLOUDY</span>
+                </div>
+                <div className="obs-graph">
+                  {conditions.hourly.map((h, i) => {
+                    const cls = h.cloud <= 25 ? 'clear' : h.cloud <= 60 ? 'part' : 'cloud';
+                    return (
+                      <div className="og-col" key={h.time}>
+                        <div className="og-barwrap"><i className={cls} style={{ height: `${Math.max(4, 100 - h.cloud)}%` }} /></div>
+                        <span className="og-hr">{i % 2 === 0 ? h.time.slice(0, 2) : ''}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="obs-row"><span className="k">CLOUD L / M / H</span><span className="v">{conditions.cloudNow.low}% / {conditions.cloudNow.mid}% / {conditions.cloudNow.high}%</span></div>
+                <div className="obs-row"><span className="k">TEMP / DEW</span><span className="v">{Math.round(conditions.temperature)}°C / {Math.round(conditions.dewPoint)}°C</span></div>
+                <div className="obs-row"><span className="k">WIND</span><span className="v">{Math.round(conditions.windSpeed)} km/h</span></div>
+                <div className="obs-row"><span className="k">SITE</span><span className="v">{loc.source === 'gps' ? `${Math.abs(loc.lat).toFixed(2)}°${loc.lat >= 0 ? 'N' : 'S'} ${Math.abs(loc.lon).toFixed(2)}°${loc.lon >= 0 ? 'E' : 'W'} · LOCAL` : 'CALGARY · DEFAULT'}</span></div>
+                <span className="obs-tag">OPEN-METEO</span>
+              </>
+            ) : <div className="obs-empty">FETCHING FORECAST…</div>}
+          </div>
+        </div>
+
+        <div className={openCls('light')}>
+          <div className="obs-card-head" onClick={() => toggle('light')}>
+            <div className="t">◍ LIGHT POLLUTION</div>
+            <div className="g"><span className="g-txt">{light ? `BORTLE ${light.bortle} · SQM ${light.sqm.toFixed(1)}` : 'LOADING…'}</span><Dot c={lightDot} /></div>
+          </div>
+          <div className="obs-card-body" {...lightPager.swipe}>
+            {light ? (
+              lightView === 1 ? (
+                <>
+                  <div className="obs-row"><span className="k">DARK SKY FINDER</span><span className="v">RINGS AT {light.rings.join(' / ')} KM</span></div>
+                  <EscapeMap lp={light} />
+                  {light.nearestDark
+                    ? <div className="obs-row"><span className="k">NEAREST DARK SKY</span><span className="v hot">BORTLE {light.nearestDark.bortle} · {light.nearestDark.km} KM {light.nearestDark.dir}</span></div>
+                    : <div className="obs-row"><span className="k">NEAREST DARK SKY</span><span className="v">{light.bortle <= 4 ? 'YOU ARE IN ONE' : 'NONE WITHIN 150 KM'}</span></div>}
+                  {lightPager.dots}
+                </>
+              ) : (
+                <>
+                  <BortleScale bortle={light.bortle} />
+                  <div className="obs-row"><span className="k">CLASS {light.bortle}</span><span className="v">{light.label}</span></div>
+                  <div className="obs-row"><span className="k">SKY BRIGHTNESS</span><span className="v">SQM {light.sqm.toFixed(2)} MAG/ARCSEC²</span></div>
+                  <div className="obs-row"><span className="k">VS NATURAL SKY</span><span className="v">{light.ratio < 1 ? `${Math.round(light.ratio * 100)}% BRIGHTER` : `${(light.ratio + 1).toFixed(1)}× BRIGHTER`}</span></div>
+                  <span className="obs-tag">LORENZ ATLAS 2025 · VIIRS</span>
+                  {lightPager.dots}
+                </>
+              )
+            ) : <div className="obs-empty">READING ATLAS…</div>}
+          </div>
+        </div>
+
+        <div className={openCls('aurora')}>
+          <div className="obs-card-head" onClick={() => toggle('aurora')}>
+            <div className="t">▲ AURORA WATCH</div>
+            <div className="g"><span className="g-txt">{aurora ? <span className={aurora.kpNow >= 4 ? 'hot' : ''}>KP {aurora.kpNow.toFixed(1)} · {aurora.stormLevel}</span> : 'LOADING…'}</span><Dot c={auroraDot} /></div>
+          </div>
+          <div className="obs-card-body" {...auroraPager.swipe}>
+            {aurora ? (
+              auroraView === 1 ? (
+                <>
+                  <div className="obs-row"><span className="k">KP FORECAST · NEXT 24H</span><span className="v">3-HOUR BLOCKS</span></div>
+                  <KpChart forecast={aurora.forecast} needed={aurora.neededKp} tz={tz} />
+                  <span className="obs-tag">NOAA SWPC FORECAST</span>
+                  {auroraPager.dots}
+                </>
+              ) : (
+              <>
+                <div className="obs-row"><span className="k">STATUS</span><span className={`v ${aurora.kpNow >= 5 ? 'hot' : ''}`}>{aurora.stormLevel}</span></div>
+                <div className="obs-row"><span className="k">VISIBILITY @ {Math.abs(loc.lat).toFixed(0)}°{loc.lat >= 0 ? 'N' : 'S'}</span><span className={`v ${aurora.kpNow >= 4 ? 'hot' : ''}`}>{aurora.visibility}</span></div>
+                <div className="obs-bar"><i style={{ width: `${Math.min(100, (Math.max(aurora.kpNow, aurora.kpMax24h) / 9) * 100)}%` }} /></div>
+                <div className="obs-row"><span className="k">KP FORECAST MAX 24H</span><span className="v">{aurora.kpMax24h.toFixed(1)}</span></div>
+                <div className="obs-row"><span className="k">BZ</span><span className="v">{aurora.bz !== null ? `${aurora.bz} nT ${aurora.bz <= -5 ? '(favourable)' : ''}` : 'n/a'}</span></div>
+                <div className="obs-row"><span className="k">SOLAR WIND</span><span className="v">{aurora.windSpeed !== null ? `${Math.round(aurora.windSpeed)} km/s` : 'n/a'}</span></div>
+                <span className="obs-tag">NOAA SWPC</span>
+                {auroraPager.dots}
+              </>
+              )
+            ) : <div className="obs-empty">ACQUIRING SPACE WEATHER…</div>}
+          </div>
+        </div>
+
+        <div className={openCls('solar')}>
+          <div className="obs-card-head" onClick={() => toggle('solar')}>
+            <div className="t">☉ SOLAR WATCH</div>
+            <div className="g"><span className="g-txt">{solar ? `${solar.currentClass} · ${solar.activeRegions} REGIONS` : 'LOADING…'}</span></div>
+          </div>
+          <div className="obs-card-body" {...solarPager.swipe}>
+            {solar ? (
+              solarView === 1 ? (
+                <>
+                  <div className="obs-row"><span className="k">RECENT FLARES</span><span className="v">NEWEST FIRST</span></div>
+                  {solar.flares.length > 0 ? solar.flares.map((f, i) => (
+                    <div className="obs-row" key={i}>
+                      <span className="k">{new Date(f.time).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz })}</span>
+                      <span className={`v ${f.maxClass.startsWith('X') ? 'danger' : f.maxClass.startsWith('M') ? 'warn' : ''}`}>{f.maxClass}</span>
+                    </div>
+                  )) : <div className="obs-empty">NO FLARES THIS WEEK</div>}
+                  {solarPager.dots}
+                </>
+              ) : (
+                <>
+                  <div className="obs-row"><span className="k">X-RAY FLUX NOW</span><span className={`v ${solar.currentClass.startsWith('M') || solar.currentClass.startsWith('X') ? 'warn' : ''}`}>CLASS {solar.currentClass}</span></div>
+                  <div className="obs-row"><span className="k">SUNSPOT NUMBER</span><span className="v">~{solar.sunspotNumber}</span></div>
+                  <div className="obs-row"><span className="k">ACTIVE REGIONS</span><span className="v">{solar.activeRegions}</span></div>
+                  <div className="obs-row"><span className="k">BIGGEST FLARE 24H</span><span className="v">{solar.biggestFlare24h ?? 'NONE'}</span></div>
+                  <div className="obs-row"><span className="k">M / X FLARE ODDS</span><span className="v">{solar.mProbability}% / {solar.xProbability}%</span></div>
+                  <span className="obs-tag">NOAA SWPC · GOES</span>
+                  {solarPager.dots}
+                </>
+              )
+            ) : <div className="obs-empty">MEASURING THE SUN…</div>}
+          </div>
+        </div>
+
+        <div className="obs-section">// SPACEFLIGHT</div>
+
         <div className={openCls('map')}>
           <div className="obs-card-head" onClick={() => { if (isDesktop) { window.location.href = '/?desktop=1'; return; } if (open !== 'map') loadCraft(); toggle('map'); }}>
             <div className="t">✷ DEEP SPACE ASSETS</div>
@@ -903,7 +990,7 @@ export default function TonightPage() {
       {open && !isDesktop && (
         <div className="obs-pile" onClick={() => setOpen('')}>
           <i /><i /><i />
-          <span>▤ 8 MORE CARDS — TAP TO RETURN</span>
+          <span>▤ 10 MORE CARDS — TAP TO RETURN</span>
         </div>
       )}
 
