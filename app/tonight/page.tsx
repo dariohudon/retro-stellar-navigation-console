@@ -672,7 +672,7 @@ export default function TonightPage() {
           </div>
         )}
 
-        <div className="obs-section">// THE SKY</div>
+        <div className="obs-section"><span>//</span> THE SKY</div>
 
         <div className={openCls('events')}>
           <div className="obs-card-head" onClick={() => toggle('events')}>
@@ -812,7 +812,7 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className="obs-section">// CAN I OBSERVE?</div>
+        <div className="obs-section"><span>//</span> CAN I OBSERVE?</div>
 
         <div className={openCls('conditions')}>
           <div className="obs-card-head" onClick={() => toggle('conditions')}>
@@ -954,7 +954,7 @@ export default function TonightPage() {
           </div>
         </div>
 
-        <div className="obs-section">// SPACEFLIGHT</div>
+        <div className="obs-section"><span>//</span> SPACEFLIGHT</div>
 
         <div className={openCls('passes')}>
           <div className="obs-card-head" onClick={() => toggle('passes')}>
