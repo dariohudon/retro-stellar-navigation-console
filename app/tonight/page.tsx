@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import './tonight.css';
+import pkg from '../../package.json';
 import type { AuroraData } from '@/lib/observatory/aurora';
 import type { ConditionsData } from '@/lib/observatory/conditions';
 import type { TonightData } from '@/lib/observatory/tonight';
@@ -338,6 +339,7 @@ export default function TonightPage() {
   const qs = `?lat=${loc.lat.toFixed(3)}&lon=${loc.lon.toFixed(3)}&tz=${encodeURIComponent(tz)}`;
   const [isDesktop, setIsDesktop] = useState(false);
   const [theme, setTheme] = useState<'day' | 'green' | 'night'>('day');
+  const [menuOpen, setMenuOpen] = useState(false);
   const [craft, setCraft] = useState<Array<{ name: string; distanceAU: number }> | null>(null);
   const [issView, setIssView] = useState(0); // 0 list · 1 sky path · 2 crew
   const [crew, setCrew] = useState<CrewData | null>(null);
@@ -648,14 +650,27 @@ export default function TonightPage() {
             {' · '}{Math.abs(loc.lat).toFixed(2)}°{loc.lat >= 0 ? 'N' : 'S'} {Math.abs(loc.lon).toFixed(2)}°{loc.lon >= 0 ? 'E' : 'W'}{loc.source === 'default' ? ' (DEFAULT)' : ''}
           </div>
         </div>
-        <div className="obs-loc">
-          <div className="obs-theme-picker">
-            <button className={theme === 'day' ? 'on' : ''} onClick={() => pickTheme('day')}>DAY</button>
-            <button className={theme === 'green' ? 'on' : ''} onClick={() => pickTheme('green')}>GRN</button>
-            <button className={theme === 'night' ? 'on' : ''} onClick={() => pickTheme('night')}>RED</button>
-          </div>
-        </div>
+        <button className="obs-menu-btn" aria-label="Menu" onClick={() => setMenuOpen(true)}>☰</button>
       </header>
+
+      {menuOpen && <div className="obs-drawer-backdrop" onClick={() => setMenuOpen(false)} />}
+      <aside className={`obs-drawer${menuOpen ? ' openm' : ''}`}>
+        <div className="obs-drawer-head">
+          <span>SETTINGS</span>
+          <button onClick={() => setMenuOpen(false)}>✕</button>
+        </div>
+        <div className="obs-drawer-label">DISPLAY MODE</div>
+        {([['day', 'DAY', 'WHITE PHOSPHOR'], ['green', 'GREEN', 'CLASSIC CRT'], ['night', 'RED', 'PRESERVES NIGHT VISION']] as const).map(([id, name, sub]) => (
+          <button key={id} className={`obs-drawer-opt${theme === id ? ' on' : ''}`} onClick={() => pickTheme(id)}>
+            <span className="odo-dot" />
+            <span className="odo-text"><b>{name}</b><i>{sub}</i></span>
+          </button>
+        ))}
+        <div className="obs-drawer-foot">
+          <div>RETRO STELLAR OBSERVATORY</div>
+          <div className="odf-ver">v{pkg.version}</div>
+        </div>
+      </aside>
 
       <div className="obs-status">
         <div>KP <b className={aurora && aurora.kpNow >= 4 ? 'hot' : ''}>{aurora ? aurora.kpNow.toFixed(1) : '—'}</b></div>
