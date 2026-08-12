@@ -715,7 +715,7 @@ export default function TonightPage() {
           <button onClick={() => setMenuOpen(false)}>✕</button>
         </div>
         <div className="obs-drawer-label">DISPLAY MODE</div>
-        {([['auto', 'AUTO', 'RED AFTER DARK, DAY OTHERWISE'], ['day', 'DAY', 'WHITE PHOSPHOR'], ['green', 'GREEN', 'CLASSIC CRT'], ['night', 'RED', 'PRESERVES NIGHT VISION'], ['retro', 'RETRO', 'SEVENTIES MISSION PANEL']] as const).map(([id, name, sub]) => (
+        {([['auto', 'AUTO', 'RED AFTER DARK, DAY OTHERWISE'], ['day', 'DAY', 'WHITE PHOSPHOR'], ['green', 'GREEN', 'CLASSIC CRT'], ['night', 'RED', 'PRESERVES NIGHT VISION'], ['retro', 'RETRO', 'ALBERTANS IN SPACE PALETTE']] as const).map(([id, name, sub]) => (
           <button key={id} className={`obs-drawer-opt${theme === id ? ' on' : ''}`} onClick={() => pickTheme(id)}>
             <span className="odo-dot" />
             <span className="odo-text"><b>{name}</b><i>{sub}</i></span>
