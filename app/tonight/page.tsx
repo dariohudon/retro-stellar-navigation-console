@@ -121,7 +121,7 @@ export default function TonightPage() {
       <header className="obs-header">
         <h1>⟨ OBSERVATORY ⟩</h1>
         <div className="obs-loc">
-          51.04°N 114.07°W · {clock} MT
+          <span className="obs-coords">51.04°N 114.07°W · </span>{clock} MT
           <div className="obs-theme-picker">
             <button className={theme === 'day' ? 'on' : ''} onClick={() => pickTheme('day')}>DAY</button>
             <button className={theme === 'green' ? 'on' : ''} onClick={() => pickTheme('green')}>GRN</button>
