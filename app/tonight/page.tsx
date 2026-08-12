@@ -48,6 +48,9 @@ function SkyPath({ pass }: { pass: PassesData['passes'][number] }) {
       <text x={252} y={C + 4} textAnchor="middle" className="sp-card">E</text>
       <text x={C} y={256} textAnchor="middle" className="sp-card">S</text>
       <text x={8} y={C + 4} textAnchor="middle" className="sp-card">W</text>
+      <text x={C - R * 0.6} y={C + R * 0.78} textAnchor="middle" transform={`rotate(38 ${C - R * 0.6} ${C + R * 0.78})`} className="sp-lbl sp-faint">— HORIZON —</text>
+      <circle cx={C} cy={C} r="1.5" fill="var(--hud-green-faint)" />
+      <text x={C} y={C - 6} textAnchor="middle" className="sp-lbl sp-faint">YOU · LOOKING UP</text>
       {/* track */}
       <path d={d} fill="none" stroke="var(--hud-green)" strokeWidth="1.75" />
       <circle cx={first.x} cy={first.y} r="3.5" fill="var(--hud-bg)" stroke="var(--hud-green)" strokeWidth="1.5" />
@@ -302,8 +305,7 @@ export default function TonightPage() {
   const [solar, setSolar] = useState<SolarData | null>(null);
   const [solarView, setSolarView] = useState<0 | 1>(0);
   const [targets, setTargets] = useState<TargetsData | null>(null);
-  const [tgtView, setTgtView] = useState<0 | 1>(0);
-  const [skyView, setSkyView] = useState<0 | 1>(0);
+  const [skyView, setSkyView] = useState(0); // 0 planets · 1 targets · 2 dome
   const [neoView, setNeoView] = useState<0 | 1>(0);
   const [auroraView, setAuroraView] = useState<0 | 1>(0);
   const [craftView, setCraftView] = useState<0 | 1>(0);
@@ -397,6 +399,7 @@ export default function TonightPage() {
   }, [isDesktop, loadPasses, loadNeo, loadCraft]);
 
   // ── pull-to-refresh on the open card ──
+  const stackScroll = useRef(0);
   const [pullPx, setPullPx] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const pullRef = useRef(0);
@@ -408,13 +411,16 @@ export default function TonightPage() {
     try {
       if (id === 'aurora') { const d = await j('/api/aurora' + qs); if (!d.error) setAurora(d); }
       else if (id === 'conditions') { const d = await j('/api/conditions' + qs); if (!d.error) setConditions(d); }
-      else if (id === 'sky') { const d = await j('/api/tonight' + qs); if (!d.error) setTonight(d); }
+      else if (id === 'sky') {
+        const [a, b] = await Promise.all([j('/api/tonight' + qs), j('/api/targets' + qs)]);
+        if (!a.error) setTonight(a);
+        if (!b.error) setTargets(b);
+      }
       else if (id === 'passes') { const d = await j('/api/passes' + qs); if (!d.error) setPasses(d); }
       else if (id === 'events') { const d = await j('/api/events' + qs); if (!d.error) setEvents(d); }
       else if (id === 'missions') { const d = await j('/api/missions'); if (!d.error) setMissions(d); }
       else if (id === 'light') { const d = await j('/api/lightpollution' + qs); if (!d.error) setLight(d); }
       else if (id === 'solar') { const d = await j('/api/solar'); if (!d.error) setSolar(d); }
-      else if (id === 'targets') { const d = await j('/api/targets' + qs); if (!d.error) setTargets(d); }
       else if (id === 'neo') await fetchNeo();
       else if (id === 'map') await fetchCraft();
     } catch { /* keep old data */ }
@@ -457,11 +463,22 @@ export default function TonightPage() {
 
   const toggle = (id: string) => {
     if (isDesktop) return;
+    const root = document.querySelector('.obs-root');
     const next = open === id ? '' : id;
+    if (open === '' && next) stackScroll.current = root ? root.scrollTop : 0;
     setOpen(next);
     if (next === 'passes') loadPasses();
     if (next === 'neo') loadNeo();
+    if (next !== '' && root) root.scrollTop = 0;
   };
+
+  // restore stack scroll position after the cards re-render
+  useEffect(() => {
+    if (open === '') {
+      const r = document.querySelector('.obs-root');
+      if (r) r.scrollTop = stackScroll.current;
+    }
+  }, [open]);
 
   const openCls = (id: string) => `obs-card${open === id || isDesktop ? ' open' : ''}`;
 
@@ -508,12 +525,25 @@ export default function TonightPage() {
   const fmtMsnDate = (iso: string) => new Date(iso).toLocaleString('en-CA', { month: 'short', day: 'numeric', hourCycle: 'h23', hour: '2-digit', minute: '2-digit', timeZone: tz }).toUpperCase();
   const msnDays = (iso: string) => Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 86400000));
 
-  const skyPager = pager(skyView, v => setSkyView(v));
   const neoPager = pager(neoView, v => setNeoView(v));
   const auroraPager = pager(auroraView, v => setAuroraView(v));
   const lightPager = pager(lightView, v => setLightView(v));
   const solarPager = pager(solarView, v => setSolarView(v));
-  const tgtPager = pager(tgtView, v => setTgtView(v));
+  const skyDots = (
+    <div className="obs-dots">
+      {[0, 1, 2].map(v => (
+        <i key={v} className={skyView === v ? 'on' : ''} onClick={e => { e.stopPropagation(); setSkyView(v); }} />
+      ))}
+    </div>
+  );
+  const skySwipe = {
+    onTouchStart: (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; },
+    onTouchEnd: (e: React.TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - touchX.current;
+      if (dx < -40) setSkyView(v => Math.min(2, v + 1));
+      if (dx > 40) setSkyView(v => Math.max(0, v - 1));
+    },
+  };
   const craftPager = pager(craftView, v => setCraftView(v));
 
   const lightDot: DotColor = !light ? null : light.bortle <= 4 ? 'green' : light.bortle <= 6 ? 'amber' : 'red';
@@ -628,77 +658,67 @@ export default function TonightPage() {
         <div className={openCls('sky')}>
           <div className="obs-card-head" onClick={() => toggle('sky')}>
             <div className="t">◑ TONIGHT&apos;S SKY</div>
-            <div className="g"><span className="g-txt">{tonight ? `${tonight.planets.filter(p => p.visible).length} planets up · moon ${tonight.moon.illumination}%` : 'LOADING…'}</span><Dot c={skyDot} /></div>
+            <div className="g"><span className="g-txt">{tonight && targets ? `${tonight.planets.filter(p => p.visible).length} PLANETS · ${targets.picks.filter(p => p.visibleHere).length} TARGETS` : 'LOADING…'}</span><Dot c={skyDot} /></div>
           </div>
-          <div className="obs-card-body" {...skyPager.swipe}>
+          <div className="obs-card-body" {...skySwipe}>
             {tonight ? (
-              skyView === 1 ? (
-                <>
-                  <div className="obs-row"><span className="k">SKY RIGHT NOW</span><span className="v">DOME VIEW · ZENITH AT CENTRE</span></div>
-                  <SkyDome planets={tonight.planets} moon={tonight.moon} />
-                  {skyPager.dots}
-                </>
-              ) : (
-              <>
-                {tonight.planets.map(p => (
-                  <div className="obs-row" key={p.name}>
-                    <span className="k">{p.name}</span>
-                    <span className={`v ${p.visible ? '' : ''}`}>
-                      {p.visible ? `UP · ${p.azimuthCompass} ${p.altitude}°` : p.rise ? `rises ${p.rise}` : 'below horizon'}
-                      {` · mag ${p.magnitude}`}
-                    </span>
-                  </div>
-                ))}
-                <div className="obs-row"><span className="k">MOON</span><span className="v">{tonight.moon.phaseName} {tonight.moon.illumination}%{tonight.moon.rise ? ` · rise ${tonight.moon.rise}` : ''}{tonight.moon.set ? ` · set ${tonight.moon.set}` : ''}</span></div>
-                {tonight.nextShower && (
-                  <div className="obs-row"><span className="k">METEORS</span><span className={`v ${tonight.nextShower.daysAway <= 2 ? 'warn' : ''}`}>{tonight.nextShower.name} · {tonight.nextShower.daysAway === 0 ? 'PEAKS TONIGHT' : `peak ${tonight.nextShower.peak} (${tonight.nextShower.daysAway}d)`}</span></div>
-                )}
-                <span className="obs-tag">ASTRONOMY-ENGINE · LOCAL</span>
-                {skyPager.dots}
-              </>
-              )
-            ) : <div className="obs-empty">COMPUTING EPHEMERIS…</div>}
-          </div>
-        </div>
-
-        <div className={openCls('targets')}>
-          <div className="obs-card-head" onClick={() => toggle('targets')}>
-            <div className="t">⌖ TONIGHT&apos;S TARGETS</div>
-            <div className="g"><span className="g-txt">{targets ? `${targets.picks.filter(p => p.visibleHere).length} CITY-PROOF · ${targets.picks.length} PICKS` : 'LOADING…'}</span><Dot c={tgtDot} /></div>
-          </div>
-          <div className="obs-card-body" {...tgtPager.swipe}>
-            {targets ? (
-              tgtView === 1 ? (
+              skyView === 2 ? (
                 <>
                   <div className="obs-row"><span className="k">YOUR SKY, LOOKING UP</span><span className="v">EDGE = HORIZON · CENTRE = OVERHEAD</span></div>
                   <SkyDome
-                    planets={targets.picks.slice(0, 8).map(p => ({ name: p.id, visible: true, altitude: p.altitude, azimuth: p.azimuth, azimuthCompass: p.azCompass, rise: null, set: null, magnitude: p.mag }))}
-                    moon={{ illumination: targets.moonIllumination, phaseName: '', rise: null, set: null, altitude: -90, azimuth: 0 }}
+                    planets={[
+                      ...tonight.planets,
+                      ...(targets ? targets.picks.filter(p => p.visibleHere).slice(0, 5).map(p => ({ name: p.id, visible: true, altitude: p.altitude, azimuth: p.azimuth, azimuthCompass: p.azCompass, rise: null, set: null, magnitude: p.mag })) : []),
+                    ]}
+                    moon={tonight.moon}
                   />
-                  {tgtPager.dots}
+                  {skyDots}
                 </>
+              ) : skyView === 1 ? (
+                targets ? (
+                  <>
+                    {conditions && conditions.score <= 3 && (
+                      <div className="obs-cloudwarn">☁ CLOUDS WILL LIKELY BLOCK TONIGHT — PICKS ASSUME A CLEAR SKY</div>
+                    )}
+                    <div className="obs-row"><span className="k">BEST THINGS TO POINT AT</span><span className="v">MOON {targets.moonIllumination}%{targets.bortle ? ` · BORTLE ${targets.bortle}` : ''}</span></div>
+                    {targets.picks.map(p => {
+                      const altPhrase = p.altitude >= 60 ? 'nearly overhead' : p.altitude >= 35 ? 'halfway up the sky' : 'low on the horizon';
+                      return (
+                        <div className="obs-tgt" key={p.id}>
+                          <div className="obs-tgt-top">
+                            <span className="obs-tgt-name">{p.name}</span>
+                            <span className={`obs-tgt-chip ${p.visibleHere ? (p.moonWarning ? 'chip-moon' : 'chip-ok') : 'chip-dark'}`}>
+                              {p.visibleHere ? (p.moonWarning ? '☾ MOONLIGHT HURTS' : '✓ YOUR SKY') : 'NEEDS DARK SITE'}
+                            </span>
+                          </div>
+                          <div className="obs-tgt-sub">{p.blurb}.</div>
+                          <div className="obs-tgt-how">LOOK {p.azCompass} · {altPhrase.toUpperCase()} · BEST {p.bestTime}</div>
+                        </div>
+                      );
+                    })}
+                    {skyDots}
+                  </>
+                ) : <div className="obs-empty">PLANNING OBSERVATIONS…</div>
               ) : (
                 <>
-                  <div className="obs-row"><span className="k">DARK {targets.windowStart}–{targets.windowEnd}</span><span className="v">MOON {targets.moonIllumination}%{targets.bortle ? ` · YOUR SKY: BORTLE ${targets.bortle}` : ''}</span></div>
-                  {targets.picks.map(p => {
-                    const altPhrase = p.altitude >= 60 ? 'nearly overhead' : p.altitude >= 35 ? 'halfway up the sky' : 'low on the horizon';
-                    return (
-                      <div className="obs-tgt" key={p.id}>
-                        <div className="obs-tgt-top">
-                          <span className="obs-tgt-name">{p.name}</span>
-                          <span className={`obs-tgt-chip ${p.visibleHere ? (p.moonWarning ? 'chip-moon' : 'chip-ok') : 'chip-dark'}`}>
-                            {p.visibleHere ? (p.moonWarning ? '☾ MOONLIGHT HURTS' : '✓ YOUR SKY') : 'NEEDS DARK SITE'}
-                          </span>
-                        </div>
-                        <div className="obs-tgt-sub">{p.blurb}.</div>
-                        <div className="obs-tgt-how">LOOK {p.azCompass} · {altPhrase.toUpperCase()} · BEST {p.bestTime}</div>
-                      </div>
-                    );
-                  })}
-                  {tgtPager.dots}
+                  {tonight.planets.map(p => (
+                    <div className="obs-row" key={p.name}>
+                      <span className="k">{p.name}</span>
+                      <span className={`v ${p.visible ? '' : ''}`}>
+                        {p.visible ? `UP · ${p.azimuthCompass} ${p.altitude}°` : p.rise ? `rises ${p.rise}` : 'below horizon'}
+                        {` · mag ${p.magnitude}`}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="obs-row"><span className="k">MOON</span><span className="v">{tonight.moon.phaseName} {tonight.moon.illumination}%{tonight.moon.rise ? ` · rise ${tonight.moon.rise}` : ''}{tonight.moon.set ? ` · set ${tonight.moon.set}` : ''}</span></div>
+                  {tonight.nextShower && (
+                    <div className="obs-row"><span className="k">METEORS</span><span className={`v ${tonight.nextShower.daysAway <= 2 ? 'warn' : ''}`}>{tonight.nextShower.name} · {tonight.nextShower.daysAway === 0 ? 'PEAKS TONIGHT' : `peak ${tonight.nextShower.peak} (${tonight.nextShower.daysAway}d)`}</span></div>
+                  )}
+                  <span className="obs-tag">SWIPE: TARGETS ▸ DOME</span>
+                  {skyDots}
                 </>
               )
-            ) : <div className="obs-empty">PLANNING OBSERVATIONS…</div>}
+            ) : <div className="obs-empty">COMPUTING EPHEMERIS…</div>}
           </div>
         </div>
 
@@ -750,7 +770,7 @@ export default function TonightPage() {
                   </>
                 ) : (
                   <>
-                    <div className="obs-row"><span className="k">PASS</span><span className="v">{passes.passes[issPass].start} · {passes.passes[issPass].durationMin} MIN</span></div>
+                    <div className="obs-row"><span className="k">PASS {passes.passes[issPass].start}</span><span className="v">EDGE = HORIZON · CENTRE = OVERHEAD</span></div>
                     <SkyPath pass={passes.passes[issPass]} />
                     {issDots}
                   </>
@@ -907,11 +927,18 @@ export default function TonightPage() {
                 </>
               ) : (
                 <>
-                  <div className="obs-row"><span className="k">X-RAY FLUX NOW</span><span className={`v ${solar.currentClass.startsWith('M') || solar.currentClass.startsWith('X') ? 'warn' : ''}`}>CLASS {solar.currentClass}</span></div>
-                  <div className="obs-row"><span className="k">SUNSPOT NUMBER</span><span className="v">~{solar.sunspotNumber}</span></div>
-                  <div className="obs-row"><span className="k">ACTIVE REGIONS</span><span className="v">{solar.activeRegions}</span></div>
+                  <div className="obs-cloudwarn solar-summary">
+                    {solar.biggestFlare24h && (solar.biggestFlare24h.startsWith('X') || solar.biggestFlare24h.startsWith('M'))
+                      ? `THE SUN IS ACTIVE — BIG FLARES TODAY. AURORAS POSSIBLE HERE IN 1–3 DAYS.`
+                      : solar.currentClass.startsWith('C') || (solar.biggestFlare24h ?? '').startsWith('C')
+                        ? 'THE SUN IS SIMMERING — SMALL FLARES, NOTHING DRAMATIC.'
+                        : 'THE SUN IS QUIET TODAY.'}
+                  </div>
+                  <div className="obs-row"><span className="k">FLARE LEVEL NOW</span><span className={`v ${solar.currentClass.startsWith('M') || solar.currentClass.startsWith('X') ? 'warn' : ''}`}>CLASS {solar.currentClass}</span></div>
                   <div className="obs-row"><span className="k">BIGGEST FLARE 24H</span><span className="v">{solar.biggestFlare24h ?? 'NONE'}</span></div>
-                  <div className="obs-row"><span className="k">M / X FLARE ODDS</span><span className="v">{solar.mProbability}% / {solar.xProbability}%</span></div>
+                  <div className="obs-row"><span className="k">SUNSPOTS TODAY</span><span className="v">~{solar.sunspotNumber} IN {solar.activeRegions} GROUPS</span></div>
+                  <div className="obs-row"><span className="k">ODDS OF A BIG FLARE</span><span className="v">{solar.mProbability}%{solar.xProbability >= 5 ? ` (EXTREME: ${solar.xProbability}%)` : ''}</span></div>
+                  <p className="obs-ev-blurb">Sunspots are magnetic storms on the Sun&apos;s surface; when they snap, they fire flares ranked A → B → C → M → X, each step 10× stronger. M and X flares can hurl plasma at Earth — and that&apos;s what paints auroras here a night or three later.</p>
                   <span className="obs-tag">NOAA SWPC · GOES</span>
                   {solarPager.dots}
                 </>
@@ -999,7 +1026,7 @@ export default function TonightPage() {
       {open && !isDesktop && (
         <div className="obs-pile" onClick={() => setOpen('')}>
           <i /><i /><i />
-          <span>▤ 10 MORE CARDS — TAP TO RETURN</span>
+          <span>▤ 9 MORE CARDS — TAP TO RETURN</span>
         </div>
       )}
 
