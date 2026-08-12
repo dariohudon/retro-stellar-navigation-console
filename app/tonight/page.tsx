@@ -54,20 +54,28 @@ function SkyPath({ pass }: { pass: PassesData['passes'][number] }) {
   );
 }
 
-function useClock() {
+function useClock(tz: string) {
   const [now, setNow] = useState('');
   useEffect(() => {
-    const tick = () =>
-      setNow(new Date().toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Edmonton' }));
+    const tick = () => {
+      const parts = new Date().toLocaleTimeString('en-CA', {
+        hour: '2-digit', minute: '2-digit', hour12: false, hourCycle: 'h23', timeZone: tz, timeZoneName: 'short',
+      });
+      setNow(parts);
+    };
     tick();
     const id = setInterval(tick, 30000);
     return () => clearInterval(id);
-  }, []);
+  }, [tz]);
   return now;
 }
 
+const DEFAULT_LOC = { lat: 51.0447, lon: -114.0719, source: 'default' as 'default' | 'gps' };
+
 export default function TonightPage() {
-  const clock = useClock();
+  const [loc, setLoc] = useState(DEFAULT_LOC);
+  const [tz, setTz] = useState('America/Edmonton');
+  const clock = useClock(tz);
   const [open, setOpen] = useState<string>('');
   const [splash, setSplash] = useState(true);
 
@@ -75,6 +83,31 @@ export default function TonightPage() {
     const t = setTimeout(() => setSplash(false), 1200);
     return () => clearTimeout(t);
   }, []);
+
+  // ── location: saved > geolocation prompt > Calgary default ──
+  useEffect(() => {
+    try { setTz(Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Edmonton'); } catch {}
+    const saved = localStorage.getItem('obs-loc');
+    if (saved) {
+      try {
+        const p = JSON.parse(saved);
+        if (Number.isFinite(p.lat) && Number.isFinite(p.lon)) { setLoc({ lat: p.lat, lon: p.lon, source: 'gps' }); return; }
+      } catch {}
+    }
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const next = { lat: pos.coords.latitude, lon: pos.coords.longitude, source: 'gps' as const };
+          localStorage.setItem('obs-loc', JSON.stringify({ lat: next.lat, lon: next.lon }));
+          setLoc(next);
+        },
+        () => {},
+        { timeout: 8000, maximumAge: 3600000 },
+      );
+    }
+  }, []);
+
+  const qs = `?lat=${loc.lat.toFixed(3)}&lon=${loc.lon.toFixed(3)}&tz=${encodeURIComponent(tz)}`;
   const [isDesktop, setIsDesktop] = useState(false);
   const [theme, setTheme] = useState<'day' | 'green' | 'night'>('day');
   const [craft, setCraft] = useState<Array<{ name: string; distanceAU: number }> | null>(null);
@@ -116,15 +149,16 @@ export default function TonightPage() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/aurora').then(r => r.json()).then(d => !d.error && setAurora(d)).catch(() => {});
-    fetch('/api/conditions').then(r => r.json()).then(d => !d.error && setConditions(d)).catch(() => {});
-    fetch('/api/tonight').then(r => r.json()).then(d => !d.error && setTonight(d)).catch(() => {});
-    fetch('/api/passes').then(r => r.json()).then(d => !d.error && setPasses(d)).catch(() => {});
-  }, []);
+    fetch('/api/aurora' + qs).then(r => r.json()).then(d => !d.error && setAurora(d)).catch(() => {});
+    fetch('/api/conditions' + qs).then(r => r.json()).then(d => !d.error && setConditions(d)).catch(() => {});
+    fetch('/api/tonight' + qs).then(r => r.json()).then(d => !d.error && setTonight(d)).catch(() => {});
+    fetch('/api/passes' + qs).then(r => r.json()).then(d => !d.error && setPasses(d)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qs]);
 
   const loadPasses = useCallback(() => {
-    if (!passes) fetch('/api/passes').then(r => r.json()).then(d => !d.error && setPasses(d)).catch(() => {});
-  }, [passes]);
+    if (!passes) fetch('/api/passes' + qs).then(r => r.json()).then(d => !d.error && setPasses(d)).catch(() => {});
+  }, [passes, qs]);
 
   const loadNeo = useCallback(() => {
     if (!neo)
@@ -208,7 +242,7 @@ export default function TonightPage() {
       <header className="obs-header">
         <h1>⟨ OBSERVATORY ⟩</h1>
         <div className="obs-loc">
-          <span className="obs-coords">51.04°N 114.07°W · </span>{clock} MT
+          <span className="obs-coords">{Math.abs(loc.lat).toFixed(2)}°{loc.lat >= 0 ? 'N' : 'S'} {Math.abs(loc.lon).toFixed(2)}°{loc.lon >= 0 ? 'E' : 'W'}{loc.source === 'default' ? ' (DEFAULT)' : ''} · </span>{clock}
           <div className="obs-theme-picker">
             <button className={theme === 'day' ? 'on' : ''} onClick={() => pickTheme('day')}>DAY</button>
             <button className={theme === 'green' ? 'on' : ''} onClick={() => pickTheme('green')}>GRN</button>
@@ -235,7 +269,7 @@ export default function TonightPage() {
             {aurora ? (
               <>
                 <div className="obs-row"><span className="k">STATUS</span><span className={`v ${aurora.kpNow >= 5 ? 'hot' : ''}`}>{aurora.stormLevel}</span></div>
-                <div className="obs-row"><span className="k">VISIBILITY @ 51°N</span><span className={`v ${aurora.kpNow >= 4 ? 'hot' : ''}`}>{aurora.visibility}</span></div>
+                <div className="obs-row"><span className="k">VISIBILITY @ {Math.abs(loc.lat).toFixed(0)}°{loc.lat >= 0 ? 'N' : 'S'}</span><span className={`v ${aurora.kpNow >= 4 ? 'hot' : ''}`}>{aurora.visibility}</span></div>
                 <div className="obs-bar"><i style={{ width: `${Math.min(100, (Math.max(aurora.kpNow, aurora.kpMax24h) / 9) * 100)}%` }} /></div>
                 <div className="obs-row"><span className="k">KP FORECAST MAX 24H</span><span className="v">{aurora.kpMax24h.toFixed(1)}</span></div>
                 <div className="obs-row"><span className="k">BZ</span><span className="v">{aurora.bz !== null ? `${aurora.bz} nT ${aurora.bz <= -5 ? '(favourable)' : ''}` : 'n/a'}</span></div>
@@ -299,7 +333,7 @@ export default function TonightPage() {
                 <div className="obs-row"><span className="k">CLOUD L / M / H</span><span className="v">{conditions.cloudNow.low}% / {conditions.cloudNow.mid}% / {conditions.cloudNow.high}%</span></div>
                 <div className="obs-row"><span className="k">TEMP / DEW</span><span className="v">{Math.round(conditions.temperature)}°C / {Math.round(conditions.dewPoint)}°C</span></div>
                 <div className="obs-row"><span className="k">WIND</span><span className="v">{Math.round(conditions.windSpeed)} km/h</span></div>
-                <div className="obs-row"><span className="k">SITE</span><span className="v">CALGARY · BORTLE 7</span></div>
+                <div className="obs-row"><span className="k">SITE</span><span className="v">{loc.source === 'gps' ? `${Math.abs(loc.lat).toFixed(2)}°${loc.lat >= 0 ? 'N' : 'S'} ${Math.abs(loc.lon).toFixed(2)}°${loc.lon >= 0 ? 'E' : 'W'} · LOCAL` : 'CALGARY · DEFAULT'}</span></div>
                 <span className="obs-tag">OPEN-METEO</span>
               </>
             ) : <div className="obs-empty">FETCHING FORECAST…</div>}

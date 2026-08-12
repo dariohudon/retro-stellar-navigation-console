@@ -1,6 +1,7 @@
 import * as satellite from 'satellite.js';
 import { Body, Observer, Equator, Horizon } from 'astronomy-engine';
 import { SITE } from './site';
+import { getCached, setCached } from '../ephemeris/cache';
 
 export interface Pass {
   start: string;
@@ -27,26 +28,33 @@ function compass(azRad: number): string {
   return dirs[Math.round(deg / 45) % 8];
 }
 
-function fmtLocal(d: Date): string {
+function fmtLocal(d: Date, tz: string): string {
   return d.toLocaleString('en-CA', {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-    hour12: false, timeZone: SITE.timezone,
+    hour12: false, hourCycle: 'h23', timeZone: tz,
   });
 }
 
-export async function fetchIssPasses(): Promise<PassesData> {
+async function getTle(): Promise<string[]> {
+  const cached = getCached<string[]>('iss-tle');
+  if (cached) return cached.data;
   const res = await fetch('https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=tle', {
     signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) throw new Error(`celestrak ${res.status}`);
   const tle = (await res.text()).trim().split('\n').map(l => l.trim());
   if (tle.length < 3) throw new Error('bad TLE');
+  setCached('iss-tle', tle, 6 * 60 * 60 * 1000);
+  return tle;
+}
 
+export async function fetchIssPasses(lat = SITE.lat, lon = SITE.lon, tz = SITE.timezone): Promise<PassesData> {
+  const tle = await getTle();
   const satrec = satellite.twoline2satrec(tle[1], tle[2]);
   const observerGd = {
-    longitude: satellite.degreesToRadians(SITE.lon),
-    latitude: satellite.degreesToRadians(SITE.lat),
-    height: SITE.elevation / 1000,
+    longitude: satellite.degreesToRadians(lon),
+    latitude: satellite.degreesToRadians(lat),
+    height: 0.8,
   };
 
   const passes: Pass[] = [];
@@ -83,12 +91,12 @@ export async function fetchIssPasses(): Promise<PassesData> {
       const stride = Math.max(1, Math.ceil(track.length / 24));
       const points = track.filter((_, i) => i % stride === 0 || i === track.length - 1);
       const mid = new Date((passStart + time.getTime()) / 2);
-      const obs = new Observer(SITE.lat, SITE.lon, SITE.elevation);
+      const obs = new Observer(lat, lon, 800);
       const sunEq = Equator(Body.Sun, mid, obs, true, true);
       const sunHor = Horizon(mid, obs, sunEq.ra, sunEq.dec, 'normal');
       passes.push({
-        start: fmtLocal(new Date(passStart)),
-        end: fmtLocal(time),
+        start: fmtLocal(new Date(passStart), tz),
+        end: fmtLocal(time, tz),
         maxElevation: Math.round(maxEl),
         startDir,
         endDir,

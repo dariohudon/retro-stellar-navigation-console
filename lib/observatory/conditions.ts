@@ -18,12 +18,12 @@ export interface ConditionsData {
   fetchedAt: string;
 }
 
-export async function fetchConditions(): Promise<ConditionsData> {
+export async function fetchConditions(lat = SITE.lat, lon = SITE.lon, tz = SITE.timezone): Promise<ConditionsData> {
   const url =
-    `https://api.open-meteo.com/v1/forecast?latitude=${SITE.lat}&longitude=${SITE.lon}` +
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&hourly=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,visibility,` +
     `temperature_2m,dew_point_2m,relative_humidity_2m,wind_speed_10m` +
-    `&forecast_days=2&timezone=${encodeURIComponent(SITE.timezone)}`;
+    `&forecast_days=2&timezone=${encodeURIComponent(tz)}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`open-meteo ${res.status}`);
   const j = await res.json();

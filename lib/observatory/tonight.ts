@@ -35,9 +35,9 @@ const SHOWERS: Array<{ name: string; month: number; day: number }> = [
   { name: 'URSIDS', month: 12, day: 22 },
 ];
 
-function fmtLocal(d: Date | null): string | null {
+function fmtLocal(d: Date | null, tz: string): string | null {
   if (!d) return null;
-  return d.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: SITE.timezone });
+  return d.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false, hourCycle: 'h23', timeZone: tz });
 }
 
 function compass(az: number): string {
@@ -56,8 +56,8 @@ function phaseName(angle: number): string {
   return 'WANING CRESCENT';
 }
 
-export function computeTonight(): TonightData {
-  const obs = new Observer(SITE.lat, SITE.lon, SITE.elevation);
+export function computeTonight(lat = SITE.lat, lon = SITE.lon, tz = SITE.timezone): TonightData {
+  const obs = new Observer(lat, lon, 800);
   const now = new Date();
 
   const duskEvent = SearchAltitude(Body.Sun, obs, -1, now, 2, -18);
@@ -79,8 +79,8 @@ export function computeTonight(): TonightData {
       visible: hor.altitude > 5,
       altitude: Math.round(hor.altitude),
       azimuthCompass: compass(hor.azimuth),
-      rise: fmtLocal(rise ? rise.date : null),
-      set: fmtLocal(set ? set.date : null),
+      rise: fmtLocal(rise ? rise.date : null, tz),
+      set: fmtLocal(set ? set.date : null, tz),
       magnitude: Math.round(illum.mag * 10) / 10,
     });
   }
@@ -101,19 +101,19 @@ export function computeTonight(): TonightData {
     const daysAway = Math.max(0, Math.round((best.date.getTime() - now.getTime()) / 86400000));
     nextShower = {
       name: best.name,
-      peak: best.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: SITE.timezone }),
+      peak: best.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: tz }),
       daysAway,
     };
   }
 
   return {
-    darknessStart: fmtLocal(duskEvent ? duskEvent.date : null),
-    darknessEnd: fmtLocal(dawnEvent ? dawnEvent.date : null),
+    darknessStart: fmtLocal(duskEvent ? duskEvent.date : null, tz),
+    darknessEnd: fmtLocal(dawnEvent ? dawnEvent.date : null, tz),
     moon: {
       illumination: Math.round(moonIllum.phase_fraction * 100),
       phaseName: phaseName(MoonPhase(now)),
-      rise: fmtLocal(moonRise ? moonRise.date : null),
-      set: fmtLocal(moonSet ? moonSet.date : null),
+      rise: fmtLocal(moonRise ? moonRise.date : null, tz),
+      set: fmtLocal(moonSet ? moonSet.date : null, tz),
     },
     planets,
     nextShower,

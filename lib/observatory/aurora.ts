@@ -20,17 +20,19 @@ function stormLevel(kp: number): string {
   return 'QUIET';
 }
 
-// heuristic for ~51°N (Calgary)
-function visibility(kp: number, bz: number | null): string {
-  const boost = bz !== null && bz <= -5 ? 1 : 0;
-  const eff = kp + boost * 0.5;
-  if (eff >= 6) return 'OVERHEAD DISPLAYS LIKELY';
-  if (eff >= 5) return 'LIKELY — WATCH N SKY';
-  if (eff >= 4) return 'POSSIBLE LOW ON N HORIZON';
+// latitude-aware heuristic: further north needs less Kp
+export function visibility(kp: number, bz: number | null, lat: number): string {
+  const boost = bz !== null && bz <= -5 ? 0.5 : 0;
+  const eff = kp + boost;
+  // Kp needed for "likely" at this latitude (rough auroral-oval model)
+  const needed = lat >= 60 ? 3 : lat >= 56 ? 3.5 : lat >= 53 ? 4.5 : lat >= 50 ? 5 : lat >= 47 ? 6 : 7.5;
+  if (eff >= needed + 1) return 'OVERHEAD DISPLAYS LIKELY';
+  if (eff >= needed) return 'LIKELY — WATCH N SKY';
+  if (eff >= needed - 1) return 'POSSIBLE LOW ON N HORIZON';
   return 'UNLIKELY TONIGHT';
 }
 
-export async function fetchAurora(): Promise<AuroraData> {
+export async function fetchAurora(lat: number): Promise<AuroraData> {
   const [kpRes, forecastRes, windRes] = await Promise.allSettled([
     fetch(`${SWPC}/products/noaa-planetary-k-index.json`, { signal: AbortSignal.timeout(10000) }),
     fetch(`${SWPC}/products/noaa-planetary-k-index-forecast.json`, { signal: AbortSignal.timeout(10000) }),
@@ -96,7 +98,7 @@ export async function fetchAurora(): Promise<AuroraData> {
     stormLevel: stormLevel(kpEff),
     bz,
     windSpeed,
-    visibility: visibility(kpEff, bz),
+    visibility: visibility(kpEff, bz, lat),
     fetchedAt: new Date().toISOString(),
   };
 }
