@@ -325,9 +325,9 @@
 
 /* ── hamburger + settings drawer ── */
 .obs-menu-btn {
-  background: none; border: 1px solid var(--hud-border); border-radius: 6px;
-  color: var(--hud-green-mid); font-size: 18px; line-height: 1;
-  padding: 7px 12px; cursor: pointer;
+  background: none; border: none;
+  color: var(--hud-green-mid); font-size: 20px; line-height: 1;
+  padding: 7px 6px; cursor: pointer;
 }
 .obs-drawer-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); z-index: 120; }
 .obs-drawer {
@@ -348,12 +348,12 @@
 .obs-drawer-label { font-size: 10.5px; letter-spacing: 2px; color: var(--hud-green-faint); margin-bottom: 10px; }
 .obs-drawer-opt {
   display: flex; align-items: center; gap: 12px; width: 100%;
-  background: none; border: 1px solid var(--hud-border); border-radius: 8px;
-  padding: 12px 14px; margin-bottom: 10px; cursor: pointer; text-align: left;
+  background: none; border: none;
+  padding: 12px 2px; margin-bottom: 4px; cursor: pointer; text-align: left;
   font-family: inherit; color: var(--hud-green-mid);
 }
 .obs-drawer-opt .odo-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--hud-green-dim); flex-shrink: 0; }
-.obs-drawer-opt.on { border-color: var(--hud-green); }
+.obs-drawer-opt.on .odo-text b { color: var(--hud-green); }
 .obs-drawer-opt.on .odo-dot { background: var(--hud-green); border-color: var(--hud-green); box-shadow: 0 0 8px var(--hud-green); }
 .obs-drawer-opt .odo-text { display: flex; flex-direction: column; gap: 2px; }
 .obs-drawer-opt .odo-text b { font-size: 13.5px; letter-spacing: 1.5px; }
