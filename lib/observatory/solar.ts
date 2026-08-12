@@ -3,7 +3,18 @@ export interface SolarFlare {
   maxClass: string;
 }
 
+export interface SunRegion {
+  region: number;
+  lat: number;   // heliographic, north positive
+  lonEW: number; // east positive (left limb as seen from Earth)
+  spots: number;
+  area: number;
+  flared: number;    // flares produced (C+M+X counts)
+  mProb: number;
+}
+
 export interface SolarData {
+  regions: SunRegion[];
   currentClass: string;      // e.g. B5.4 — background X-ray level right now
   activeRegions: number;
   sunspotNumber: number;
@@ -43,9 +54,15 @@ export async function fetchSolar(): Promise<SolarData> {
   }
 
   let activeRegions = 0, sunspotNumber = 0, mProbability = 0, xProbability = 0;
+  const regions: SunRegion[] = [];
   if (regionsRes.status === 'fulfilled' && regionsRes.value.ok) {
-    const rows: Array<{ observed_date: string; number_spots: number; m_flare_probability: number | null; x_flare_probability: number | null }> =
-      await regionsRes.value.json();
+    interface Row {
+      observed_date: string; region: number; latitude: number; longitude: number;
+      location: string | null; area: number; number_spots: number;
+      c_xray_events: number | null; m_xray_events: number | null; x_xray_events: number | null;
+      m_flare_probability: number | null; x_flare_probability: number | null;
+    }
+    const rows: Row[] = await regionsRes.value.json();
     const latest = rows.reduce((m, r) => (r.observed_date > m ? r.observed_date : m), '');
     const today = rows.filter(r => r.observed_date === latest);
     activeRegions = today.length;
@@ -53,6 +70,19 @@ export async function fetchSolar(): Promise<SolarData> {
       sunspotNumber += r.number_spots ?? 0;
       mProbability = Math.max(mProbability, r.m_flare_probability ?? 0);
       xProbability = Math.max(xProbability, r.x_flare_probability ?? 0);
+      // location string like S07E65 / N12W30 is authoritative for signs
+      let lat = r.latitude ?? 0, lonEW = r.longitude ?? 0;
+      const m = (r.location ?? '').match(/([NS])(\d+)([EW])(\d+)/);
+      if (m) {
+        lat = (m[1] === 'N' ? 1 : -1) * parseInt(m[2], 10);
+        lonEW = (m[3] === 'E' ? 1 : -1) * parseInt(m[4], 10);
+      }
+      regions.push({
+        region: r.region, lat, lonEW,
+        spots: r.number_spots ?? 0, area: r.area ?? 0,
+        flared: (r.c_xray_events ?? 0) + (r.m_xray_events ?? 0) + (r.x_xray_events ?? 0),
+        mProb: r.m_flare_probability ?? 0,
+      });
     }
     sunspotNumber += 10 * activeRegions; // Wolf number convention: 10R + spots
   }
@@ -74,5 +104,5 @@ export async function fetchSolar(): Promise<SolarData> {
     }
   }
 
-  return { currentClass, activeRegions, sunspotNumber, biggestFlare24h, mProbability, xProbability, flares, fetchedAt: new Date().toISOString() };
+  return { regions, currentClass, activeRegions, sunspotNumber, biggestFlare24h, mProbability, xProbability, flares, fetchedAt: new Date().toISOString() };
 }

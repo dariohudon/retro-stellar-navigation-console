@@ -243,6 +243,45 @@ function EscapeMap({ lp }: { lp: LightPollutionData }) {
   );
 }
 
+function SunDisk({ regions }: { regions: SolarData['regions'] }) {
+  const C = 130, R = 108;
+  const deg = Math.PI / 180;
+  // orthographic projection of the Earth-facing hemisphere; east limb on the left
+  const project = (lat: number, lonEW: number) => ({
+    x: C - R * Math.cos(lat * deg) * Math.sin(lonEW * deg),
+    y: C - R * Math.sin(lat * deg),
+  });
+  return (
+    <svg viewBox="0 0 260 260" className="obs-skypath" aria-label="Solar disk with active regions">
+      <circle cx={C} cy={C} r={R} fill="none" stroke="var(--hud-warning)" strokeWidth="1.5" opacity="0.8" />
+      {/* heliographic grid */}
+      {[-60, -30, 0, 30, 60].map(lat => {
+        const y = C - R * Math.sin(lat * deg);
+        const hw = R * Math.cos(lat * deg);
+        return <line key={lat} x1={C - hw} y1={y} x2={C + hw} y2={y} stroke="var(--hud-border)" strokeWidth="0.5" strokeDasharray="2 5" />;
+      })}
+      {[-60, -30, 0, 30, 60].map(lon => (
+        <ellipse key={lon} cx={C} cy={C} rx={Math.abs(R * Math.sin(lon * deg)) || 0.5} ry={R} fill="none" stroke="var(--hud-border)" strokeWidth="0.5" strokeDasharray="2 5" />
+      ))}
+      <text x={C - R - 8} y={C + 3} textAnchor="middle" className="sp-card">E</text>
+      <text x={C + R + 8} y={C + 3} textAnchor="middle" className="sp-card">W</text>
+      <text x={C} y={C - R - 6} textAnchor="middle" className="sp-lbl sp-faint">SPOTS DRIFT E → W IN ~13 DAYS</text>
+      {regions.map(r => {
+        const p = project(r.lat, r.lonEW);
+        const size = Math.max(2.5, Math.min(9, Math.sqrt(r.area) / 3));
+        const hot = r.mProb >= 20 || r.flared >= 3;
+        return (
+          <g key={r.region}>
+            <circle cx={p.x} cy={p.y} r={size} fill={hot ? 'var(--hud-danger)' : 'var(--hud-warning)'} opacity={hot ? 0.95 : 0.75} />
+            <text x={p.x} y={p.y - size - 4} textAnchor="middle" className="sp-lbl">{String(r.region).slice(-2)}</text>
+          </g>
+        );
+      })}
+      {regions.length === 0 && <text x={C} y={C} textAnchor="middle" className="sp-lbl">BLANK SUN — NO SPOTS TODAY</text>}
+    </svg>
+  );
+}
+
 function useClock(tz: string) {
   const [now, setNow] = useState('');
   useEffect(() => {
@@ -303,7 +342,7 @@ export default function TonightPage() {
   const [issView, setIssView] = useState(0); // 0 list · 1 sky path · 2 crew
   const [crew, setCrew] = useState<CrewData | null>(null);
   const [solar, setSolar] = useState<SolarData | null>(null);
-  const [solarView, setSolarView] = useState<0 | 1>(0);
+  const [solarView, setSolarView] = useState(0); // 0 stats · 1 disk · 2 flares
   const [targets, setTargets] = useState<TargetsData | null>(null);
   const [skyView, setSkyView] = useState(0); // 0 planets · 1 targets · 2 dome
   const [neoView, setNeoView] = useState<0 | 1>(0);
@@ -528,7 +567,21 @@ export default function TonightPage() {
   const neoPager = pager(neoView, v => setNeoView(v));
   const auroraPager = pager(auroraView, v => setAuroraView(v));
   const lightPager = pager(lightView, v => setLightView(v));
-  const solarPager = pager(solarView, v => setSolarView(v));
+  const solarDots = (
+    <div className="obs-dots">
+      {[0, 1, 2].map(v => (
+        <i key={v} className={solarView === v ? 'on' : ''} onClick={e => { e.stopPropagation(); setSolarView(v); }} />
+      ))}
+    </div>
+  );
+  const solarSwipe = {
+    onTouchStart: (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; },
+    onTouchEnd: (e: React.TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - touchX.current;
+      if (dx < -40) setSolarView(v => Math.min(2, v + 1));
+      if (dx > 40) setSolarView(v => Math.max(0, v - 1));
+    },
+  };
   const skyDots = (
     <div className="obs-dots">
       {[0, 1, 2].map(v => (
@@ -854,18 +907,25 @@ export default function TonightPage() {
             <div className="t">☉ SOLAR WATCH</div>
             <div className="g"><span className="g-txt">{solar ? `${solar.currentClass} · ${solar.activeRegions} REGIONS` : 'LOADING…'}</span></div>
           </div>
-          <div className="obs-card-body" {...solarPager.swipe}>
+          <div className="obs-card-body" {...solarSwipe}>
             {solar ? (
               solarView === 1 ? (
                 <>
-                  <div className="obs-row"><span className="k">RECENT FLARES</span><span className="v">NEWEST FIRST</span></div>
+                  <div className="obs-row"><span className="k">THE SUN&apos;S FACE TODAY</span><span className="v">EACH DOT = A SUNSPOT GROUP</span></div>
+                  <SunDisk regions={solar.regions} />
+                  <div className="obs-row"><span className="k">RED = LIKELY TO FLARE</span><span className="v">SIZE = SPOT GROUP AREA</span></div>
+                  {solarDots}
+                </>
+              ) : solarView === 2 ? (
+                <>
+                  <div className="obs-row"><span className="k">THIS WEEK&apos;S ERUPTIONS</span><span className="v">NEWEST FIRST</span></div>
                   {solar.flares.length > 0 ? solar.flares.map((f, i) => (
                     <div className="obs-row" key={i}>
                       <span className="k">{new Date(f.time).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz })}</span>
                       <span className={`v ${f.maxClass.startsWith('X') ? 'danger' : f.maxClass.startsWith('M') ? 'warn' : ''}`}>{f.maxClass}</span>
                     </div>
                   )) : <div className="obs-empty">NO FLARES THIS WEEK</div>}
-                  {solarPager.dots}
+                  {solarDots}
                 </>
               ) : (
                 <>
@@ -882,7 +942,7 @@ export default function TonightPage() {
                   <div className="obs-row"><span className="k">ODDS OF A BIG FLARE</span><span className="v">{solar.mProbability}%{solar.xProbability >= 5 ? ` (EXTREME: ${solar.xProbability}%)` : ''}</span></div>
                   <p className="obs-ev-blurb">Sunspots are magnetic storms on the Sun&apos;s surface; when they snap, they fire flares ranked A → B → C → M → X, each step 10× stronger. M and X flares can hurl plasma at Earth — and that&apos;s what paints auroras here a night or three later.</p>
                   <span className="obs-tag">NOAA SWPC · GOES</span>
-                  {solarPager.dots}
+                  {solarDots}
                 </>
               )
             ) : <div className="obs-empty">MEASURING THE SUN…</div>}
