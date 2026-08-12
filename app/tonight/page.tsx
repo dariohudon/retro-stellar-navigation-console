@@ -8,6 +8,7 @@ import type { TonightData } from '@/lib/observatory/tonight';
 import type { PassesData } from '@/lib/observatory/passes';
 import type { EventsData } from '@/lib/observatory/events';
 import type { MissionsData } from '@/lib/observatory/missions';
+import type { LightPollutionData } from '@/lib/observatory/lightpollution';
 
 interface NeoItem {
   name: string;
@@ -185,6 +186,54 @@ function DistanceLadder({ craft }: { craft: Array<{ name: string; distanceAU: nu
   );
 }
 
+const BORTLE_COLORS: Record<number, string> = {
+  0: 'transparent', 1: '#0b7a3c', 2: '#0f9c4a', 3: '#27c060', 4: '#00FF88',
+  5: '#ffc857', 6: '#ff9354', 7: '#ff6b4a', 8: '#ff4a4a', 9: '#ff8f8f',
+};
+
+function BortleScale({ bortle }: { bortle: number }) {
+  const W = 260, H = 56, bw = W / 9;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="obs-skypath obs-bortlescale" aria-label="Bortle scale">
+      {Array.from({ length: 9 }, (_, i) => (
+        <g key={i}>
+          <rect x={i * bw + 2} y={18} width={bw - 4} height={16} fill={BORTLE_COLORS[i + 1]} opacity={i + 1 === bortle ? 1 : 0.32} />
+          <text x={i * bw + bw / 2} y={48} textAnchor="middle" className="sp-lbl">{i + 1}</text>
+        </g>
+      ))}
+      <path d={`M${(bortle - 0.5) * bw - 5},12 L${(bortle - 0.5) * bw + 5},12 L${(bortle - 0.5) * bw},18 Z`} fill="var(--hud-amber)" />
+    </svg>
+  );
+}
+
+function EscapeMap({ lp }: { lp: LightPollutionData }) {
+  const C = 130, R = 118;
+  const ringR = (i: number) => ((i + 1) / lp.rings.length) * (R - 16) + 16;
+  const wedge = (dir: number, ring: number) => {
+    const a0 = (dir * 22.5 - 11.25 - 90) * (Math.PI / 180);
+    const a1 = (dir * 22.5 + 11.25 - 90) * (Math.PI / 180);
+    const r0 = ring === 0 ? 16 : ringR(ring - 1);
+    const r1 = ringR(ring);
+    const p = (a: number, r: number) => `${(C + r * Math.cos(a)).toFixed(1)},${(C + r * Math.sin(a)).toFixed(1)}`;
+    return `M${p(a0, r0)} L${p(a0, r1)} A${r1},${r1} 0 0 1 ${p(a1, r1)} L${p(a1, r0)} A${r0},${r0} 0 0 0 ${p(a0, r0)} Z`;
+  };
+  return (
+    <svg viewBox="0 0 260 260" className="obs-skypath" aria-label="Dark sky directions">
+      {lp.cells.map(c => (
+        <path key={`${c.dirIndex}-${c.ringIndex}`} d={wedge(c.dirIndex, c.ringIndex)}
+          fill={BORTLE_COLORS[c.bortle] ?? 'transparent'} opacity={c.bortle === 0 ? 0 : c.bortle <= 4 ? 0.8 : 0.45}
+          stroke="var(--hud-bg)" strokeWidth="0.5" />
+      ))}
+      <circle cx={C} cy={C} r={13} fill="var(--hud-bg)" stroke={BORTLE_COLORS[lp.bortle]} strokeWidth="1.5" />
+      <text x={C} y={C + 4} textAnchor="middle" className="sp-lbl sp-peak">{lp.bortle}</text>
+      <text x={C} y={10} textAnchor="middle" className="sp-card">N</text>
+      <text x={254} y={C + 4} textAnchor="middle" className="sp-card">E</text>
+      <text x={C} y={258} textAnchor="middle" className="sp-card">S</text>
+      <text x={6} y={C + 4} textAnchor="middle" className="sp-card">W</text>
+    </svg>
+  );
+}
+
 function useClock(tz: string) {
   const [now, setNow] = useState('');
   useEffect(() => {
@@ -250,6 +299,8 @@ export default function TonightPage() {
   const [events, setEvents] = useState<EventsData | null>(null);
   const [evPage, setEvPage] = useState(0);
   const [missions, setMissions] = useState<MissionsData | null>(null);
+  const [light, setLight] = useState<LightPollutionData | null>(null);
+  const [lightView, setLightView] = useState<0 | 1>(0);
   const [msnPage, setMsnPage] = useState(0);
   const [issPass, setIssPass] = useState(0);
   const touchX = useRef(0);
@@ -294,6 +345,7 @@ export default function TonightPage() {
     fetch('/api/passes' + qs).then(r => r.json()).then(d => !d.error && setPasses(d)).catch(() => {});
     fetch('/api/events' + qs).then(r => r.json()).then(d => !d.error && setEvents(d)).catch(() => {});
     fetch('/api/missions').then(r => r.json()).then(d => !d.error && setMissions(d)).catch(() => {});
+    fetch('/api/lightpollution' + qs).then(r => r.json()).then(d => !d.error && setLight(d)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qs]);
 
@@ -346,6 +398,7 @@ export default function TonightPage() {
       else if (id === 'passes') { const d = await j('/api/passes' + qs); if (!d.error) setPasses(d); }
       else if (id === 'events') { const d = await j('/api/events' + qs); if (!d.error) setEvents(d); }
       else if (id === 'missions') { const d = await j('/api/missions'); if (!d.error) setMissions(d); }
+      else if (id === 'light') { const d = await j('/api/lightpollution' + qs); if (!d.error) setLight(d); }
       else if (id === 'neo') await fetchNeo();
       else if (id === 'map') await fetchCraft();
     } catch { /* keep old data */ }
@@ -442,8 +495,10 @@ export default function TonightPage() {
   const skyPager = pager(skyView, v => setSkyView(v));
   const neoPager = pager(neoView, v => setNeoView(v));
   const auroraPager = pager(auroraView, v => setAuroraView(v));
+  const lightPager = pager(lightView, v => setLightView(v));
   const craftPager = pager(craftView, v => setCraftView(v));
 
+  const lightDot: DotColor = !light ? null : light.bortle <= 4 ? 'green' : light.bortle <= 6 ? 'amber' : 'red';
   const nextEvent = events?.events[0] ?? null;
   const evDot: DotColor = !nextEvent ? null : nextEvent.daysAway <= 2 ? 'green' : nextEvent.daysAway <= 7 ? 'amber' : null;
   const evCount = events ? events.events.length : 0;
@@ -647,6 +702,36 @@ export default function TonightPage() {
           </div>
         </div>
 
+        <div className={openCls('light')}>
+          <div className="obs-card-head" onClick={() => toggle('light')}>
+            <div className="t">◍ LIGHT POLLUTION</div>
+            <div className="g"><span className="g-txt">{light ? `BORTLE ${light.bortle} · SQM ${light.sqm.toFixed(1)}` : 'LOADING…'}</span><Dot c={lightDot} /></div>
+          </div>
+          <div className="obs-card-body" {...lightPager.swipe}>
+            {light ? (
+              lightView === 1 ? (
+                <>
+                  <div className="obs-row"><span className="k">DARK SKY FINDER</span><span className="v">RINGS AT {light.rings.join(' / ')} KM</span></div>
+                  <EscapeMap lp={light} />
+                  {light.nearestDark
+                    ? <div className="obs-row"><span className="k">NEAREST DARK SKY</span><span className="v hot">BORTLE {light.nearestDark.bortle} · {light.nearestDark.km} KM {light.nearestDark.dir}</span></div>
+                    : <div className="obs-row"><span className="k">NEAREST DARK SKY</span><span className="v">{light.bortle <= 4 ? 'YOU ARE IN ONE' : 'NONE WITHIN 150 KM'}</span></div>}
+                  {lightPager.dots}
+                </>
+              ) : (
+                <>
+                  <BortleScale bortle={light.bortle} />
+                  <div className="obs-row"><span className="k">CLASS {light.bortle}</span><span className="v">{light.label}</span></div>
+                  <div className="obs-row"><span className="k">SKY BRIGHTNESS</span><span className="v">SQM {light.sqm.toFixed(2)} MAG/ARCSEC²</span></div>
+                  <div className="obs-row"><span className="k">VS NATURAL SKY</span><span className="v">{light.ratio < 1 ? `${Math.round(light.ratio * 100)}% BRIGHTER` : `${(light.ratio + 1).toFixed(1)}× BRIGHTER`}</span></div>
+                  <span className="obs-tag">LORENZ ATLAS 2025 · VIIRS</span>
+                  {lightPager.dots}
+                </>
+              )
+            ) : <div className="obs-empty">READING ATLAS…</div>}
+          </div>
+        </div>
+
         <div className={openCls('passes')}>
           <div className="obs-card-head" onClick={() => toggle('passes')}>
             <div className="t">✦ ISS PASSES</div>
@@ -795,7 +880,7 @@ export default function TonightPage() {
       {open && !isDesktop && (
         <div className="obs-pile" onClick={() => setOpen('')}>
           <i /><i /><i />
-          <span>▤ 7 MORE CARDS — TAP TO RETURN</span>
+          <span>▤ 8 MORE CARDS — TAP TO RETURN</span>
         </div>
       )}
 

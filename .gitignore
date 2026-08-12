@@ -13,3 +13,6 @@ coverage
 *.sqlite
 *.db
 pm2.log
+
+# downloaded light pollution atlas tiles
+/data/lptiles/
