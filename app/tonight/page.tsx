@@ -263,16 +263,16 @@ export default function TonightPage() {
     localStorage.setItem('obs-theme', t);
   };
 
-  const loadCraft = useCallback(() => {
-    if (!craft)
-      fetch('/api/spacecraft')
+  const fetchCraft = useCallback(() => {
+    return fetch('/api/spacecraft')
         .then(r => r.json())
         .then(d => {
           const assets = Object.values(d.assets ?? {}) as Array<{ name: string; distanceAU: number }>;
           setCraft(assets.map(a => ({ name: a.name, distanceAU: a.distanceAU })));
         })
         .catch(() => setCraft([]));
-  }, [craft]);
+  }, []);
+  const loadCraft = useCallback(() => { if (!craft) fetchCraft(); }, [craft, fetchCraft]);
   const [aurora, setAurora] = useState<AuroraData | null>(null);
   const [conditions, setConditions] = useState<ConditionsData | null>(null);
   const [tonight, setTonight] = useState<TonightData | null>(null);
@@ -301,9 +301,8 @@ export default function TonightPage() {
     if (!passes) fetch('/api/passes' + qs).then(r => r.json()).then(d => !d.error && setPasses(d)).catch(() => {});
   }, [passes, qs]);
 
-  const loadNeo = useCallback(() => {
-    if (!neo)
-      fetch('/api/neo?days=7')
+  const fetchNeo = useCallback(() => {
+    return fetch('/api/neo?days=7')
         .then(r => r.json())
         .then(d => {
           interface RawNeo {
@@ -324,11 +323,68 @@ export default function TonightPage() {
           setNeo(items);
         })
         .catch(() => setNeo([]));
-  }, [neo]);
+  }, []);
+  const loadNeo = useCallback(() => { if (!neo) fetchNeo(); }, [neo, fetchNeo]);
 
   useEffect(() => {
     if (isDesktop) { loadPasses(); loadNeo(); loadCraft(); }
   }, [isDesktop, loadPasses, loadNeo, loadCraft]);
+
+  // ── pull-to-refresh on the open card ──
+  const [pullPx, setPullPx] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const pullRef = useRef(0);
+  const setPull = (v: number) => { pullRef.current = v; setPullPx(v); };
+
+  const refresh = useCallback(async (id: string) => {
+    setRefreshing(true);
+    const j = (u: string) => fetch(u).then(r => r.json());
+    try {
+      if (id === 'aurora') { const d = await j('/api/aurora' + qs); if (!d.error) setAurora(d); }
+      else if (id === 'conditions') { const d = await j('/api/conditions' + qs); if (!d.error) setConditions(d); }
+      else if (id === 'sky') { const d = await j('/api/tonight' + qs); if (!d.error) setTonight(d); }
+      else if (id === 'passes') { const d = await j('/api/passes' + qs); if (!d.error) setPasses(d); }
+      else if (id === 'events') { const d = await j('/api/events' + qs); if (!d.error) setEvents(d); }
+      else if (id === 'missions') { const d = await j('/api/missions'); if (!d.error) setMissions(d); }
+      else if (id === 'neo') await fetchNeo();
+      else if (id === 'map') await fetchCraft();
+    } catch { /* keep old data */ }
+    setRefreshing(false);
+    setPull(0);
+  }, [qs, fetchNeo, fetchCraft]);
+
+  useEffect(() => {
+    if (!open || isDesktop) return;
+    let startY = 0, active = false;
+    const body = () => document.querySelector('.obs-card.open .obs-card-body');
+    const ts = (e: TouchEvent) => {
+      const el = body();
+      active = !!el && el.scrollTop <= 0;
+      startY = e.touches[0].clientY;
+    };
+    const tm = (e: TouchEvent) => {
+      if (!active) return;
+      const el = body();
+      if (!el || el.scrollTop > 0) { setPull(0); return; }
+      const dy = e.touches[0].clientY - startY;
+      if (dy > 10) { e.preventDefault(); setPull(Math.min(90, (dy - 10) * 0.5)); }
+    };
+    const te = () => {
+      if (!active) return;
+      active = false;
+      if (pullRef.current > 55) refresh(open);
+      else setPull(0);
+    };
+    document.addEventListener('touchstart', ts, { passive: true });
+    document.addEventListener('touchmove', tm, { passive: false });
+    document.addEventListener('touchend', te);
+    return () => {
+      document.removeEventListener('touchstart', ts);
+      document.removeEventListener('touchmove', tm);
+      document.removeEventListener('touchend', te);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, isDesktop, refresh]);
 
   const toggle = (id: string) => {
     if (isDesktop) return;
@@ -446,6 +502,12 @@ export default function TonightPage() {
       </div>
 
       <div className={`obs-stack${open && !isDesktop ? ' has-open' : ''}`}>
+
+        {open && !isDesktop && (pullPx > 0 || refreshing) && (
+          <div className="obs-pull" style={{ height: refreshing ? 40 : pullPx }}>
+            {refreshing ? <span className="obs-pull-spin">⟳ REFRESHING…</span> : pullPx > 55 ? '⟳ RELEASE TO REFRESH' : '↓ PULL TO REFRESH'}
+          </div>
+        )}
 
         <div className={openCls('events')}>
           <div className="obs-card-head" onClick={() => toggle('events')}>
