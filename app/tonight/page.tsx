@@ -31,6 +31,17 @@ export default function TonightPage() {
   const clock = useClock();
   const [open, setOpen] = useState<string>('aurora');
   const [isDesktop, setIsDesktop] = useState(false);
+  const [night, setNight] = useState(false);
+
+  useEffect(() => {
+    setNight(localStorage.getItem('obs-night') === '1');
+  }, []);
+  const toggleNight = () => {
+    setNight(n => {
+      localStorage.setItem('obs-night', n ? '0' : '1');
+      return !n;
+    });
+  };
   const [aurora, setAurora] = useState<AuroraData | null>(null);
   const [conditions, setConditions] = useState<ConditionsData | null>(null);
   const [tonight, setTonight] = useState<TonightData | null>(null);
@@ -95,10 +106,13 @@ export default function TonightPage() {
   const openCls = (id: string) => `obs-card${open === id || isDesktop ? ' open' : ''}`;
 
   return (
-    <div className="obs-root">
+    <div className={`obs-root${night ? ' night' : ''}`}>
       <header className="obs-header">
         <h1>⟨ OBSERVATORY ⟩</h1>
-        <div className="obs-loc">51.04°N 114.07°W · {clock} MT</div>
+        <div className="obs-loc">
+          51.04°N 114.07°W · {clock} MT
+          <button className="obs-night-toggle" onClick={toggleNight}>{night ? 'DAY' : 'NITE'}</button>
+        </div>
       </header>
 
       <div className="obs-status">
@@ -108,7 +122,7 @@ export default function TonightPage() {
         <div>DARK <b>{tonight && tonight.darknessStart ? `${tonight.darknessStart}–${tonight.darknessEnd ?? '…'}` : '—'}</b></div>
       </div>
 
-      <div className="obs-stack">
+      <div className={`obs-stack${open && !isDesktop ? ' has-open' : ''}`}>
 
         <div className={openCls('aurora')} onClick={() => toggle('aurora')}>
           <div className="obs-card-head">
