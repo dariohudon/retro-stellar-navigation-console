@@ -286,7 +286,7 @@
 .obs-section {
   font-size: 19px; font-weight: 700; letter-spacing: 3px; color: var(--hud-amber);
   text-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
-  padding: 42px 6px 13px; position: relative; z-index: 2;
+  padding: 32px 6px 12px; position: relative; z-index: 2;
 }
 .obs-section span { color: inherit; }
 .obs-root.night .obs-section { text-shadow: 0 0 12px rgba(255, 75, 75, 0.3); }
@@ -470,3 +470,40 @@ body:has(.obs-root.retro)::after { display: none; }
 
 /* retro: chart scaffolding needs real ink on paper */
 .obs-root.retro .obs-skypath { --hud-border: #B4BDB2; }
+
+
+/* ── LCARS mode: Star Trek TNG Okudagram ── */
+.obs-root.lcars {
+  --hud-bg: #000000;
+  --hud-panel-bg: #0A0A0A;
+  --hud-green: #FF9900;        /* command orange accent */
+  --hud-green-mid: #FFCC99;    /* peach body text */
+  --hud-green-dim: #CC99CC;    /* lilac secondary */
+  --hud-green-faint: #8A6E8A;
+  --hud-amber: #FF9900;        /* orange headlines */
+  --hud-border: #442E44;
+  --hud-warning: #FFCC66;
+  --hud-danger: #CC6666;
+  font-family: 'Avenir Next Condensed', 'Arial Narrow', 'Roboto Condensed', 'Helvetica Neue', sans-serif;
+  letter-spacing: 0.3px;
+}
+body:has(.obs-root.lcars)::after { display: none; }
+.obs-root.lcars .obs-card {
+  background: #060606;
+  border: none; border-left: 16px solid #CC99CC;
+  border-radius: 26px 12px 12px 26px;
+  box-shadow: none;
+}
+.obs-root.lcars .obs-card:nth-of-type(odd) { border-left-color: #FF9900; }
+.obs-root.lcars .obs-card.open { border-left-color: #FFCC66; }
+.obs-root.lcars .obs-verdict, .obs-root.lcars .obs-section { text-shadow: none; }
+.obs-root.lcars .obs-section span { color: #CC99CC; }
+.obs-root.lcars .obs-clock-time { color: #FF9900; }
+.obs-root.lcars .obs-dot.green { background: #99CC66; box-shadow: 0 0 8px rgba(153, 204, 102, 0.7); }
+.obs-root.lcars .obs-dot.amber { background: #FFCC66; box-shadow: 0 0 8px rgba(255, 204, 102, 0.7); }
+.obs-root.lcars .obs-dot.red { background: #CC6666; box-shadow: 0 0 8px rgba(204, 102, 102, 0.7); }
+.obs-root.lcars .obs-drawer { background: #0A0A0A; border-left: 14px solid #FF9900; }
+.obs-root.lcars .obs-hints { background: #0A0A0A; border-color: #CC99CC; }
+.obs-root.lcars .obs-pile i { background: #120A12; }
+.obs-root.lcars .obs-skypath { --hud-border: #6E4E6E; }
+.obs-root.lcars .obs-bar i { background: #FF9900; box-shadow: 0 0 8px rgba(255, 153, 0, 0.6); }

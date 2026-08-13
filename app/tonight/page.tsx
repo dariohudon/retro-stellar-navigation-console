@@ -382,7 +382,7 @@ export default function TonightPage() {
 
   const qs = `?lat=${loc.lat.toFixed(3)}&lon=${loc.lon.toFixed(3)}&tz=${encodeURIComponent(tz)}`;
   const [isDesktop, setIsDesktop] = useState(false);
-  const [theme, setTheme] = useState<'auto' | 'day' | 'green' | 'night' | 'retro'>('retro');
+  const [theme, setTheme] = useState<'auto' | 'day' | 'green' | 'night' | 'retro' | 'lcars'>('retro');
   const [menuOpen, setMenuOpen] = useState(false);
   const [showHints, setShowHints] = useState(false);
 
@@ -411,9 +411,9 @@ export default function TonightPage() {
 
   useEffect(() => {
     const t = localStorage.getItem('obs-theme');
-    if (t === 'green' || t === 'night' || t === 'day' || t === 'auto' || t === 'retro') setTheme(t);
+    if (t === 'green' || t === 'night' || t === 'day' || t === 'auto' || t === 'retro' || t === 'lcars') setTheme(t);
   }, []);
-  const pickTheme = (t: 'auto' | 'day' | 'green' | 'night' | 'retro') => {
+  const pickTheme = (t: 'auto' | 'day' | 'green' | 'night' | 'retro' | 'lcars') => {
     setTheme(t);
     localStorage.setItem('obs-theme', t);
   };
@@ -725,7 +725,7 @@ export default function TonightPage() {
           <button onClick={() => setMenuOpen(false)}>✕</button>
         </div>
         <div className="obs-drawer-label">DISPLAY MODE</div>
-        {([['auto', 'AUTO', 'RED AFTER DARK, DAY OTHERWISE'], ['day', 'DAY', 'WHITE PHOSPHOR'], ['green', 'GREEN', 'CLASSIC CRT'], ['night', 'RED', 'PRESERVES NIGHT VISION'], ['retro', 'RETRO', 'ALBERTANS IN SPACE PALETTE']] as const).map(([id, name, sub]) => (
+        {([['auto', 'AUTO', 'RED AFTER DARK, DAY OTHERWISE'], ['day', 'DAY', 'WHITE PHOSPHOR'], ['green', 'GREEN', 'CLASSIC CRT'], ['night', 'RED', 'PRESERVES NIGHT VISION'], ['retro', 'RETRO', 'ALBERTANS IN SPACE PALETTE'], ['lcars', 'LCARS', 'THE NEXT GENERATION']] as const).map(([id, name, sub]) => (
           <button key={id} className={`obs-drawer-opt${theme === id ? ' on' : ''}`} onClick={() => pickTheme(id)}>
             <span className="odo-dot" />
             <span className="odo-text"><b>{name}</b><i>{sub}</i></span>
