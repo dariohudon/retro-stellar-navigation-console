@@ -286,7 +286,7 @@
 .obs-section {
   font-size: 19px; font-weight: 700; letter-spacing: 3px; color: var(--hud-amber);
   text-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
-  padding: 32px 6px 12px; position: relative; z-index: 2;
+  padding: 24px 6px 11px; position: relative; z-index: 2;
 }
 .obs-section span { color: inherit; }
 .obs-root.night .obs-section { text-shadow: 0 0 12px rgba(255, 75, 75, 0.3); }
