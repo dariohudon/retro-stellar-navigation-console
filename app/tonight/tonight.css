@@ -507,3 +507,12 @@ body:has(.obs-root.lcars)::after { display: none; }
 .obs-root.lcars .obs-pile i { background: #120A12; }
 .obs-root.lcars .obs-skypath { --hud-border: #6E4E6E; }
 .obs-root.lcars .obs-bar i { background: #FF9900; box-shadow: 0 0 8px rgba(255, 153, 0, 0.6); }
+
+.obs-stardate { color: #FF9900; }
+.obs-trek-quote {
+  padding: 8px 18px 0; font-size: 13px; letter-spacing: 1px;
+  color: #CC99CC; line-height: 1.55;
+}
+@media (max-width: 899px) {
+  .obs-root:has(.obs-stack.has-open) .obs-trek-quote { display: none; }
+}

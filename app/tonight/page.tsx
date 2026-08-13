@@ -345,6 +345,27 @@ function useClock(tz: string) {
 
 const DEFAULT_LOC = { lat: 51.0447, lon: -114.0719, source: 'default' as 'default' | 'gps' };
 
+const TREK_QUOTES: Array<[string, string]> = [
+  ['Make it so.', 'PICARD'],
+  ['Engage.', 'PICARD'],
+  ['Things are only impossible until they are not.', 'PICARD'],
+  ['It is possible to commit no mistakes and still lose. That is not a weakness; that is life.', 'PICARD'],
+  ['Seize the time. Live now; make now always the most precious time.', 'PICARD'],
+  ['The sky is the limit.', 'PICARD'],
+  ['If winning is not important, then Commander, why keep score?', 'WORF'],
+  ['Today is a good day to die.', 'WORF'],
+  ['I would gladly risk feeling bad at times, if it also meant that I could taste my dessert.', 'DATA'],
+  ['Resistance is futile.', 'THE BORG'],
+  ['Let us make sure history never forgets the name… Enterprise.', 'PICARD'],
+];
+
+/** TNG-scale stardate, calibrated to the series premiere (1987-09-28 = SD 41153.7) */
+function stardate(): string {
+  const premiere = Date.UTC(1987, 8, 28);
+  const sd = 41153.7 + ((Date.now() - premiere) / 86400000) * (1000 / 365.25);
+  return sd.toFixed(1);
+}
+
 export default function TonightPage() {
   const [loc, setLoc] = useState(DEFAULT_LOC);
   const [tz, setTz] = useState('America/Edmonton');
@@ -688,6 +709,8 @@ export default function TonightPage() {
 
   const effTheme = theme === 'auto' ? (tonight?.isNight ? 'night' : 'day') : theme;
   const isRetro = effTheme === 'retro';
+  const isLcars = effTheme === 'lcars';
+  const [trekQuote] = useState(() => TREK_QUOTES[Math.floor(Math.random() * TREK_QUOTES.length)]);
 
   return (
     <div className={`obs-root${effTheme !== 'day' ? ` ${effTheme}` : ''}`}>
@@ -711,6 +734,7 @@ export default function TonightPage() {
         <div className="obs-clock">
           <div className="obs-clock-time">{clock}</div>
           <div className="obs-clock-sub">
+            {isLcars && <span className="obs-stardate">STARDATE {stardate()} · </span>}
             {new Date().toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', timeZone: tz }).toUpperCase()}
             {' · '}{Math.abs(loc.lat).toFixed(2)}°{loc.lat >= 0 ? 'N' : 'S'} {Math.abs(loc.lon).toFixed(2)}°{loc.lon >= 0 ? 'E' : 'W'}{loc.source === 'default' ? ' (DEFAULT)' : ''}
           </div>
@@ -756,6 +780,9 @@ export default function TonightPage() {
             return <>MIXED SKIES TONIGHT — <b>WORTH A LOOK AFTER {tonight.darknessStart ?? 'DUSK'}</b></>;
           })()}
         </div>
+      )}
+      {isLcars && conditions && tonight && (
+        <div className="obs-trek-quote">&ldquo;{trekQuote[0]}&rdquo; — {trekQuote[1]}</div>
       )}
 
       <div className={`obs-stack${open && !isDesktop ? ' has-open' : ''}`}>
